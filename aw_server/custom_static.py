@@ -17,7 +17,7 @@ aw-watcher-example=/home/user/path/to/static_dir/
 Another parameter called "view" can be used if you want to create multiple visualizations for a single watcher.
 
 - You can show your custom visualizations in the official Activity Watch UI using the "Custom Watcher View"
-  See https://github.com/ActivityWatch/activitywatch/issues/453#issuecomment-910567848
+  See https://github.com/KomuTracker/komutracker/issues/453#issuecomment-910567848
 
 """
 import logging

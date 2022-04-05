@@ -13,10 +13,10 @@ basever = "v0.11"
 
 srcpath = Path(__file__).absolute().parent
 projectpath = srcpath.parent
-bundlepath = projectpath.parent  # the ActivityWatch bundle repo, in some circumstances
+bundlepath = projectpath.parent  # the KomuTracker bundle repo, in some circumstances
 
 # This line set by script when run (metaprogramming)
-__version__ = "v0.12.0b1.dev+5096717"
+__version__ = "v0.12.0b1.dev+75e8e2c"
 
 
 def get_rev():

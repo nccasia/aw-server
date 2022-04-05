@@ -1,5 +1,5 @@
 [Unit]
-Description=ActivityWatch
+Description=KomuTracker
 Documentation=
 After=mongodb.service
 

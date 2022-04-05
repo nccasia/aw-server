@@ -42,7 +42,7 @@ tests_no_zope = ["coverage[toml] (>=5.0.2)", "hypothesis", "pympler", "pytest (>
 [[package]]
 name = "aw-client"
 version = "0.5.9"
-description = "Client library for ActivityWatch"
+description = "Client library for KomuTracker"
 category = "main"
 optional = false
 python-versions = ">=3.7,<4.0"
@@ -58,7 +58,7 @@ typing-extensions = "*"
 [[package]]
 name = "aw-core"
 version = "0.5.9"
-description = "Core library for ActivityWatch"
+description = "Core library for KomuTracker"
 category = "main"
 optional = false
 python-versions = ">=3.7,<4.0"
