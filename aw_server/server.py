@@ -88,6 +88,7 @@ def _config_cors(cors_origins: List[str], testing: bool):
     # TODO: This could probably be more specific
     #       See https://github.com/nccasia/aw-server/pull/43#issuecomment-386888769
     cors_origins.append("moz-extension://*")
+    cors_origins.append("http://tracker.komu.vn:5600/*")
 
     # See: https://flask-cors.readthedocs.org/en/latest/
     CORS(current_app, resources={r"/api/*": {"origins": cors_origins}})
