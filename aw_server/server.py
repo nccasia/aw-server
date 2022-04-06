@@ -110,14 +110,23 @@ def _start(
         custom_static=custom_static,
     )
     try:
-        app.run(
-            debug=testing,
-            host=host,
+        from waitress import serve
+        serve(app, 
+            host=host, 
             port=port,
             request_handler=FlaskLogHandler,
             use_reloader=False,
             threaded=False,
         )
+        
+        #app.run(
+        #    debug=testing,
+        #    host=host,
+        #    port=port,
+        #    request_handler=FlaskLogHandler,
+        #    use_reloader=False,
+        #    threaded=False,
+        #)
     except OSError as e:
         logger.exception(e)
         raise e
