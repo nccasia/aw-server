@@ -1,13 +1,13 @@
 aw-server
 ============
 
-[![Build Status](https://github.com/KomuTracker/aw-server/workflows/Build/badge.svg?branch=master)](https://github.com/KomuTracker/aw-server/actions?query=workflow%3ABuild+branch%3Amaster)
+[![Build Status](https://github.com/nccasia/aw-server/workflows/Build/badge.svg?branch=master)](https://github.com/nccasia/aw-server/actions?query=workflow%3ABuild+branch%3Amaster)
 [![Coverage Status](https://codecov.io/gh/KomuTracker/aw-server/branch/master/graph/badge.svg)](https://codecov.io/gh/KomuTracker/aw-server)
 
 
 KomuTracker server, for secure storage and retrieval of all your Quantified Self data.
 
-**Note:** In the future this will no longer be the default server used by KomuTracker, instead we will be using [aw-server-rust](https://github.com/KomuTracker/aw-server-rust/). The fate of this repo is uncertain, but it will likely be around and maintained for a while (as a reference implementation, for prototyping, etc).
+**Note:** In the future this will no longer be the default server used by KomuTracker, instead we will be using [aw-server-rust](https://github.com/nccasia/aw-server-rust/). The fate of this repo is uncertain, but it will likely be around and maintained for a while (as a reference implementation, for prototyping, etc).
 
 
 ## Build and Install

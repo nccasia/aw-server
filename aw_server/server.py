@@ -86,7 +86,7 @@ def _config_cors(cors_origins: List[str], testing: bool):
         cors_origins.append("http://127.0.0.1:27180/*")
 
     # TODO: This could probably be more specific
-    #       See https://github.com/KomuTracker/aw-server/pull/43#issuecomment-386888769
+    #       See https://github.com/nccasia/aw-server/pull/43#issuecomment-386888769
     cors_origins.append("moz-extension://*")
 
     # See: https://flask-cors.readthedocs.org/en/latest/
