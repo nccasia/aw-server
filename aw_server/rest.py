@@ -32,7 +32,7 @@ def host_header_check(f):
         if req_host is None:
             return {"message": "host header is missing"}, 400
         else:
-            if req_host.split(":")[0] not in ["localhost", "127.0.0.1", server_host]:
+            if req_host.split(":")[0] not in ["localhost", "127.0.0.1", "tracker.komu.vn", server_host]:
                 return {"message": f"host header is invalid (was {req_host})"}, 400
         return f(*args, **kwargs)
 
