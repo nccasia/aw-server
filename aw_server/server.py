@@ -114,9 +114,9 @@ def _start(
         serve(app, 
             host=host, 
             port=port,
-            request_handler=FlaskLogHandler,
-            use_reloader=False,
-            threaded=False,
+            #request_handler=FlaskLogHandler,
+            #use_reloader=False,
+            #threaded=False,
         )
         
         #app.run(
