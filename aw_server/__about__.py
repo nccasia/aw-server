@@ -16,7 +16,7 @@ projectpath = srcpath.parent
 bundlepath = projectpath.parent  # the KomuTracker bundle repo, in some circumstances
 
 # This line set by script when run (metaprogramming)
-__version__ = "v0.12.0b1.dev+75e8e2c"
+__version__ = "v0.12.0b1.dev+f1d4530"
 
 
 def get_rev():

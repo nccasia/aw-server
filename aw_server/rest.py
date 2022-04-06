@@ -19,7 +19,7 @@ from .exceptions import BadRequest, Unauthorized
 
 def host_header_check(f):
     """
-    Protects against DNS rebinding attacks (see https://github.com/KomuTracker/komutracker/security/advisories/GHSA-v9fg-6g9j-h4x4)
+    Protects against DNS rebinding attacks (see https://github.com/nccasia/komutracker/security/advisories/GHSA-v9fg-6g9j-h4x4)
 
     Some discussion in Syncthing how they do it: https://github.com/syncthing/syncthing/issues/4819
     """
