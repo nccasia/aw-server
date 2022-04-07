@@ -18,7 +18,7 @@ def main():
                 events = aw.get_events(bucket_id, start=daystart, end=dayend)
                 events = [e for e in events if e.data["status"] == "not-afk"]
                 total_duration = sum((e.duration for e in events), timedelta())
-                print(f"Total time spent on {bucket_id} today: {total_duration}")
+                print(f"Total time spent on {bucket_id.split('_')[-1]} today: {total_duration}")
         except Exception as e:
             print(f"Error: {e}")
 
