@@ -16,6 +16,8 @@ from . import logger
 from .api import ServerAPI
 from .exceptions import BadRequest, Unauthorized
 
+from .config import config
+
 
 def host_header_check(f):
     """
@@ -30,8 +32,8 @@ def host_header_check(f):
         server_host = current_app.config["HOST"]
         req_host = request.headers.get("host", None)
         req_secret = request.headers.get("secret", None)
-        
-        if req_secret != current_app.config["SECRET"]:
+
+        if req_secret != config["server"]["secret"]:
             return {"message": "bad request"}, 400
 
         if req_host is None:
