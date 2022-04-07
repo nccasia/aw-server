@@ -29,6 +29,11 @@ def host_header_check(f):
         # TODO: What if server is bound to 0.0.0.0?
         server_host = current_app.config["HOST"]
         req_host = request.headers.get("host", None)
+        req_secret = request.headers.get("secret", None)
+        
+        if req_secret != current_app.config["SECRET"]:
+            return {"message": "bad request"}, 400
+
         if req_host is None:
             return {"message": "host header is missing"}, 400
         else:

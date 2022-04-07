@@ -6,6 +6,7 @@ host = "0.0.0.0"
 port = "5600"
 storage = "peewee"
 cors_origins = "*"
+secret = "secret"
 
 [server.custom_static]
 
