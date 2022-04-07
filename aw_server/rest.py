@@ -1,4 +1,5 @@
 from functools import wraps
+from types import MethodType
 from typing import Dict
 import traceback
 import json
@@ -33,7 +34,7 @@ def host_header_check(f):
         req_host = request.headers.get("host", None)
         req_secret = request.headers.get("secret", None)
 
-        if req_secret != config["server"]["secret"]:
+        if req_secret != config["server"]["secret"] and request.method != "GET":
             return {"message": "bad request"}, 400
 
         if req_host is None:
