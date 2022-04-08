@@ -19,6 +19,23 @@ from .exceptions import BadRequest, Unauthorized
 
 from .config import config
 
+import time
+import base64
+
+def current_milli_time():
+    return round(time.time() * 1000)
+
+def base64_encode(message):
+    message_bytes = message.encode('ascii')
+    base64_bytes = base64.b64encode(message_bytes)
+    base64_message = base64_bytes.decode('ascii')
+    return base64_message
+    
+def base64_decode(base64_message):
+    base64_bytes = base64_message.encode('ascii')
+    message_bytes = base64.b64decode(base64_bytes)
+    message = message_bytes.decode('ascii')
+    return message
 
 def host_header_check(f):
     """
@@ -34,7 +51,9 @@ def host_header_check(f):
         req_host = request.headers.get("host", None)
         req_secret = request.headers.get("secret", None)
 
-        if req_secret != config["server"]["secret"] and request.method != "GET":
+        millisec = int(base64_decode(req_secret))
+
+        if current_milli_time() - millisec > 10000 and request.method != "GET":
             return {"message": "bad request"}, 400
 
         if req_host is None:
