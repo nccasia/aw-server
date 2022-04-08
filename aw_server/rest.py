@@ -51,6 +51,9 @@ def host_header_check(f):
         req_host = request.headers.get("host", None)
         req_secret = request.headers.get("secret", None)
 
+        if req_secret is None:
+            return {"message": "secret header is missing"}, 400
+
         millisec = int(base64_decode(req_secret))
 
         if current_milli_time() - millisec > 10000 and request.method != "GET":
