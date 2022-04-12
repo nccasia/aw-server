@@ -5,5 +5,4 @@
 
 echo "Starting report..."
 
-source /home/nccsoft/komutracker/venv/bin/activate
-python /home/nccsoft/komutracker/aw-server/report_spent_time.py
+/home/nccsoft/komutracker/venv/bin/python /home/nccsoft/komutracker/aw-server/report_spent_time.py
