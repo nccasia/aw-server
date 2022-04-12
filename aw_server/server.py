@@ -51,8 +51,8 @@ def create_app(
     with app.app_context():
         _config_cors(cors_origins, testing)
 
-    #app.json_encoder = rest.CustomJSONEncoder
-    app.json_encoder = JSONEncoder
+    app.json_encoder = rest.CustomJSONEncoder
+    #app.json_encoder = JSONEncoder
 
     app.register_blueprint(root)
     app.register_blueprint(rest.blueprint)
