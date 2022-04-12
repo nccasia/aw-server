@@ -314,6 +314,7 @@ class HeartbeatResource(Resource):
             raise BadRequest("MissingParameter", "Missing required parameter pulsetime")
 
         event = current_app.api.heartbeat(bucket_id, heartbeat, pulsetime)
+        event.id = str(event.id)
         return event.to_json_dict(), 200
 
 
