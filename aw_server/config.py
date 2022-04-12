@@ -4,7 +4,7 @@ default_config = """
 [server]
 host = "0.0.0.0"
 port = "5600"
-storage = "peewee"
+storage = "mongodb"
 cors_origins = "*"
 secret = "secret"
 
