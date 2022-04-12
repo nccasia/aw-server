@@ -22,6 +22,8 @@ from .config import config
 import time
 import base64
 
+from bson import ObjectId
+
 def current_milli_time():
     return round(time.time() * 1000)
 
@@ -86,6 +88,8 @@ class CustomJSONEncoder(json.JSONEncoder):
                 return obj.isoformat()
             if isinstance(obj, timedelta):
                 return obj.total_seconds()
+            if isinstance(obj, ObjectId):
+                return str(obj)
         except TypeError:
             pass
         return json.JSONEncoder.default(self, obj)
