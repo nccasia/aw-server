@@ -13,21 +13,12 @@ from .log import FlaskLogHandler
 from .api import ServerAPI
 from . import rest
 
-import json
-from bson import ObjectId
-
 logger = logging.getLogger(__name__)
 
 app_folder = os.path.dirname(os.path.abspath(__file__))
 static_folder = os.path.join(app_folder, "static")
 
 root = Blueprint("root", __name__, url_prefix="/")
-
-class JSONEncoder(json.JSONEncoder):
-    def default(self, o):
-        if isinstance(o, ObjectId):
-            return str(o)
-        return json.JSONEncoder.default(self, o)
 
 class AWFlask(Flask):
     def __init__(self, name, *args, **kwargs):
@@ -52,7 +43,6 @@ def create_app(
         _config_cors(cors_origins, testing)
 
     app.json_encoder = rest.CustomJSONEncoder
-    #app.json_encoder = JSONEncoder
 
     app.register_blueprint(root)
     app.register_blueprint(rest.blueprint)
