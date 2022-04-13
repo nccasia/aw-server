@@ -1,0 +1,13 @@
+[Unit]
+Description=komutracker service
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+Type=simple
+User=nccsoft
+PermissionsStartOnly=true
+ExecStart=/home/nccsoft/komutracker/venv/bin/python /home/nccsoft/komutracker/aw-server/__main__.py
+Restart=on-failure
+TimeoutSec=600
