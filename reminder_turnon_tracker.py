@@ -1,15 +1,19 @@
 from datetime import datetime, time, timedelta
 import aw_client
 import requests
+import json
 
 def sendWarnToMachleo(email):
+    headers = {'Content-type': 'application/json', 'Accept': 'text/plain', "X-Secret-Key" : "6kkCZQja9Gn27kTiv"}
     obj = {
         "message": f"{email} please turn on komutracker",
         "channelid": "921339190090797106"
     }
-    requests.post("http://172.16.100.114:3000/sendMessageToChannel", 
-                    data = obj, 
-                    headers = { "X-Secret-Key" : "6kkCZQja9Gn27kTiv" })
+    r = requests.post("http://172.16.100.114:3000/sendMessageToChannel", 
+                    data = json.dumps(obj), 
+                    headers = headers)
+                    
+    print(r.status_code)
 
 # You need to set testing=False if you're going to run this on your normal instance
 aw = aw_client.ActivityWatchClient("report-spent-time", testing=False)
