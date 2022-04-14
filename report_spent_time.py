@@ -37,7 +37,7 @@ def main():
                 if total_duration.total_seconds() >= 0:
                     trackerid = bucket_id.split('_')[-1]
                     trackdata.append(trackerid)
-                    wfh = trackerid not in users
+                    wfh = (trackerid in users) or (f"{trackerid}.ncc" in users)
                     rec = { "email": trackerid, "spent_time": total_duration.total_seconds(), "date" : datetime.now().strftime("%m/%d/%Y"), "wfh": wfh }
                     reportdata.append(rec)
 
