@@ -49,8 +49,8 @@ def main():
         if email not in trackdata and f"{email}.ncc" not in trackdata:
             reportdata.append({ "email": email, "spent_time": 0, "date" : datetime.now().strftime("%m/%d/%Y"), "wfh": True })
 
-    #mycol.insert_many(reportdata)
-    print(reportdata)
+    mycol.insert_many(reportdata)
+    #print(reportdata)
 
 if __name__ == "__main__":
     main()
