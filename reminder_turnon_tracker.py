@@ -26,7 +26,7 @@ for bucket_id in buckets.keys():
             events = aw.get_events(bucket_id, start=daystart, end=dayend)
             events = [e for e in events if e.data["status"] == "not-afk"]
             total_duration = sum((e.duration for e in events), timedelta())
-            if total_duration.total_seconds() > 0:
+            if total_duration.total_seconds() >= 0:
                 report_data.append(bucket_id.split('_')[-1])
     except Exception as e:
         print(f"Error: {e}")
@@ -38,5 +38,5 @@ r = requests.get(api_url, headers={"securitycode": api_key_secret})
 
 for user in r.json()["result"]:
     email = user["emailAddress"].split("@")[0]
-    if email not in report_data:
+    if email not in report_data and f"{email}.ncc" not in report_data:
         sendWarnToMachleo(email)
