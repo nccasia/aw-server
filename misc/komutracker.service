@@ -1,13 +1,15 @@
 [Unit]
-Description=Gunicorn instance to serve komutracker
+Description=komutracker service
+Documentation=
 After=mongodb.service
 
 [Service]
-User=ncc
-Group=www-data
-WorkingDirectory=/home/ncc/komutracker/aw-server
-Environment="PATH=/home/ncc/komutracker/venv/bin"
-ExecStart=/home/ncc/komutracker/venv/bin/gunicorn --workers 8 --bind 0.0.0.0:5600 -m 007 wsgi:app
+Type=simple
+User=nccsoft
+PermissionsStartOnly=true
+ExecStart=/home/nccsoft/komutracker/venv/bin/python /home/nccsoft/komutracker/aw-server/__main__.py
+Restart=always
+TimeoutSec=600
 
 [Install]
 WantedBy=multi-user.target

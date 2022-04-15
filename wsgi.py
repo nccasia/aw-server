@@ -1,5 +1,3 @@
-from aw_server.server import create_app
+import aw_server
 
-def app():
-    return create_app()
-
+aw_server.main()

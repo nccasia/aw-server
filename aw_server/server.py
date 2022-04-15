@@ -111,12 +111,13 @@ def _start(
         custom_static=custom_static,
     )
     try:
-        #from waitress import serve
-        #serve(app, 
-        #    host=host, 
-        #    port=port,            
-        #)
-
+        from waitress import serve
+        serve(app, 
+            host=host,
+            port=port,
+            threads=12,
+        )
+        '''
         log = logging.getLogger('werkzeug')
         log.setLevel(logging.ERROR)
         
@@ -127,7 +128,7 @@ def _start(
             #request_handler=FlaskLogHandler,
             use_reloader=False,
             threaded=True,
-        )
+        )'''
     except OSError as e:
         logger.exception(e)
         raise e
