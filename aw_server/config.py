@@ -2,7 +2,7 @@ from aw_core.config import load_config_toml
 
 default_config = """
 [server]
-host = "0.0.0.0"
+host = "localhost"
 port = "5600"
 storage = "mongodb"
 cors_origins = "*"
