@@ -54,7 +54,7 @@ def create_app(
     # needed for host-header check
     app.config["HOST"] = host
     
-    app.logger.disabled = True
+    app.logger.setLevel(logging.ERROR)
     
     return app
 
