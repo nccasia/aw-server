@@ -25,8 +25,6 @@ def main():
 
     buckets = aw.get_buckets()
     
-    print(buckets)
-    '''
     for bucket_id in buckets.keys():
         try:
             daystart = datetime.combine(datetime.now().date(), time())
