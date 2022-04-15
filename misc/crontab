@@ -1,2 +1,2 @@
-59 16 * * *  /home/nccsoft/komutracker/venv/bin/python /home/nccsoft/komutracker/aw-server/report_spent_time.py
-30 5 * * *   /home/nccsoft/komutracker/venv/bin/python /home/nccsoft/komutracker/aw-server/reminder_turnon_tracker.py
+59 16 * * *  /home/nccsoft/komutracker/venv/bin/python /home/nccsoft/komutracker/aw-server/misc/report_spent_time.py
+30 5 * * *   /home/nccsoft/komutracker/venv/bin/python /home/nccsoft/komutracker/aw-server/misc/reminder_turnon_tracker.py
