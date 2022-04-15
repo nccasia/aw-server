@@ -8,7 +8,7 @@ from .config import config
 from . import __version__
 
 logger = logging.getLogger(__name__)
-
+logger.disabled = True
 
 def main():
     """Called from the executable and __main__.py"""
@@ -25,8 +25,8 @@ def main():
         "aw-server",
         testing=settings.testing,
         verbose=settings.verbose,
-        log_stderr=True,
-        log_file=True,
+        log_stderr=False,
+        log_file=False,
         log_file_json=False,
     )
 
