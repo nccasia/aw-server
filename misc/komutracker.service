@@ -5,9 +5,9 @@ After=mongodb.service
 
 [Service]
 Type=simple
-User=nccsoft
+User=ncc
 PermissionsStartOnly=true
-ExecStart=/home/nccsoft/komutracker/venv/bin/python /home/nccsoft/komutracker/aw-server/wsgi.py
+ExecStart=/home/ncc/komutracker/venv/bin/python /home/ncc/komutracker/aw-server/wsgi.py
 Restart=always
 TimeoutSec=600
 
