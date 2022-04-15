@@ -125,7 +125,7 @@ def _start(
             host=host,
             port=port,
             #request_handler=FlaskLogHandler,
-            use_reloader=True,
+            use_reloader=False,
             threaded=True,
         )
     except OSError as e:
