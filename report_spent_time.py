@@ -34,11 +34,23 @@ def main():
                 events = aw.get_events(bucket_id, start=daystart, end=dayend)
                 events = [e for e in events if e.data["status"] == "not-afk"]
                 total_duration = sum((e.duration for e in events), timedelta())
+                
+                # add time for afk but 
+                events = aw.get_events(bucket_id.replace("aw-watcher-afk", "aw-watcher-window"), start=daystart, end=dayend)
+                events = [e for e in events if "title" in e.data and e.data["title"] == "KomuTracker - Google Chrome"]
+                komtracker_duration = sum((e.duration for e in events), timedelta())
+                
                 if total_duration.total_seconds() >= 0:
                     trackerid = bucket_id.split('_')[-1]
                     trackdata.append(trackerid)
                     wfh = trackerid.replace('.ncc', '') in users
-                    rec = { "email": trackerid, "spent_time": total_duration.total_seconds(), "date" : datetime.now().strftime("%m/%d/%Y"), "wfh": wfh }
+                    rec = { 
+                            "email": trackerid, 
+                            "spent_time": total_duration.total_seconds(), 
+                            "call_time" : komtracker_duration.total_seconds(),
+                            "date" : datetime.now().strftime("%m/%d/%Y"), 
+                            "wfh": wfh
+                        }
                     reportdata.append(rec)
 
         except Exception as e:
@@ -47,7 +59,13 @@ def main():
     for user in r.json()["result"]:        
         email = user["emailAddress"].split("@")[0]
         if email not in trackdata and f"{email}.ncc" not in trackdata:
-            reportdata.append({ "email": email, "spent_time": 0, "date" : datetime.now().strftime("%m/%d/%Y"), "wfh": True })
+            reportdata.append({ 
+                            "email": email, 
+                            "spent_time": 0, 
+                            "call_time" : 0, 
+                            "date" : datetime.now().strftime("%m/%d/%Y"), 
+                            "wfh": True 
+                        })
 
     mycol.insert_many(reportdata)
     #print(reportdata)
