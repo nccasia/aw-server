@@ -116,6 +116,9 @@ def _start(
         #    host=host, 
         #    port=port,            
         #)
+
+        log = logging.getLogger('werkzeug')
+        log.setLevel(logging.ERROR)
         
         app.run(
             debug=testing,
