@@ -121,7 +121,7 @@ def _start(
             debug=testing,
             host=host,
             port=port,
-            request_handler=FlaskLogHandler,
+            #request_handler=FlaskLogHandler,
             use_reloader=True,
             threaded=True,
         )
