@@ -12,14 +12,17 @@ def main():
     reportdata = []
     users = []
     
-    api_url = "http://timesheetapi.nccsoft.vn/api/services/app/Public/GetUserWorkFromHome"
-    api_key_secret = "sksCCsksCC"
-    r = requests.get(api_url, headers={"securitycode": api_key_secret})
-    
-    for user in r.json()["result"]:
-        email = user["emailAddress"].split("@")[0]
-        users.append(email)
-    
+    try:
+        api_url = "http://timesheetapi.nccsoft.vn/api/services/app/Public/GetUserWorkFromHome"
+        api_key_secret = "sksCCsksCC"
+        r = requests.get(api_url, headers={"securitycode": api_key_secret})
+        
+        for user in r.json()["result"]:
+            email = user["emailAddress"].split("@")[0]
+            users.append(email)
+    except:
+        pass        
+
     # You need to set testing=False if you're going to run this on your normal instance
     aw = aw_client.ActivityWatchClient("report-spent-time", testing=False)
 
@@ -56,8 +59,7 @@ def main():
         except Exception as e:
             print(f"Error: {e}")
 
-    for user in r.json()["result"]:        
-        email = user["emailAddress"].split("@")[0]
+    for email in users:
         if email not in trackdata and f"{email}.ncc" not in trackdata:
             reportdata.append({ 
                             "email": email, 
@@ -68,7 +70,7 @@ def main():
                         })
 
     mycol.insert_many(reportdata)
-    #print(reportdata)'''
+    #print(reportdata)
 
 if __name__ == "__main__":
     main()
