@@ -59,7 +59,7 @@ def host_header_check(f):
 
         millisec = int(base64_decode(req_secret) or 0)
 
-        if current_milli_time() - millisec > 30000 and request.method != "GET":
+        if current_milli_time() - millisec > 15000 and request.method != "GET":
             return {"message": "bad request"}, 400
 
         if req_host is None:
