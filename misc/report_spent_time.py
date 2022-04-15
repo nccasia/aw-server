@@ -25,6 +25,8 @@ def main():
 
     buckets = aw.get_buckets()
     
+    print(buckets)
+    '''
     for bucket_id in buckets.keys():
         try:
             daystart = datetime.combine(datetime.now().date(), time())
@@ -68,7 +70,7 @@ def main():
                         })
 
     mycol.insert_many(reportdata)
-    #print(reportdata)
+    #print(reportdata)'''
 
 if __name__ == "__main__":
     main()
