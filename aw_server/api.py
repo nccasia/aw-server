@@ -38,10 +38,10 @@ def get_device_id() -> str:
 def check_bucket_exists(f):
     @functools.wraps(f)
     def g(self, bucket_id, *args, **kwargs):
-        if bucket_id not in self.db.buckets():
-            raise NotFound(
-                "NoSuchBucket", "There's no bucket named {}".format(bucket_id)
-            )
+        #if bucket_id not in self.db.buckets():
+        #    raise NotFound(
+        #        "NoSuchBucket", "There's no bucket named {}".format(bucket_id)
+        #    )
         return f(self, bucket_id, *args, **kwargs)
 
     return g
