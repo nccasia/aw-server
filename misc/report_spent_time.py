@@ -1,5 +1,6 @@
 from datetime import datetime, time, timedelta
 import aw_client
+from aw_client import queries
 import pymongo
 import requests
 
@@ -11,7 +12,7 @@ def main():
     trackdata = []
     reportdata = []
     users = []
-    
+
     try:
         api_url = "http://timesheetapi.nccsoft.vn/api/services/app/Public/GetUserWorkFromHome"
         api_key_secret = "sksCCsksCC"
@@ -25,49 +26,51 @@ def main():
 
     # You need to set testing=False if you're going to run this on your normal instance
     aw = aw_client.ActivityWatchClient("report-spent-time", testing=False)
+    daystart = datetime.combine(datetime.now().date(), time())
+    dayend = daystart + timedelta(days=1)
 
-    buckets = aw.get_buckets()
+    timeperiods = [(daystart.astimezone(), dayend.astimezone())]
     
-    for bucket_id in buckets.keys():
-        try:
-            daystart = datetime.combine(datetime.now().date(), time())
-            dayend = daystart + timedelta(days=1)
+    canonicalQuery = queries.canonicalEvents(
+        queries.DesktopQueryParams(
+            bid_window="aw-watcher-window_",
+            bid_afk="aw-watcher-afk_",
+        )
+    )
 
-            if bucket_id.startswith("aw-watcher-afk"):
-                events = aw.get_events(bucket_id, start=daystart, end=dayend)
-                events = [e for e in events if e.data["status"] == "not-afk"]
-                total_duration = sum((e.duration for e in events), timedelta())
+    for email in users:
+        try:            
+            canonicalQuery = queries.canonicalEvents(
+                queries.DesktopQueryParams(
+                    bid_window=f"aw-watcher-window_{email}",
+                    bid_afk=f"aw-watcher-afk_{email}",
+                )
+            )
+            query = f"""
+            {canonicalQuery}
+            duration = sum_durations(events);
+            RETURN = {{"events": events, "duration": duration}};
+            """
+            
+            events = aw.query(query=query, timeperiods=timeperiods)
+            total_duration = events[0]["duration"]
                 
-                # add time for afk but 
-                events = aw.get_events(bucket_id.replace("aw-watcher-afk", "aw-watcher-window"), start=daystart, end=dayend)
-                events = [e for e in events if "title" in e.data and e.data["title"] == "KomuTracker - Google Chrome"]
-                komtracker_duration = sum((e.duration for e in events), timedelta())
-                
-                if total_duration.total_seconds() >= 0:
-                    trackerid = bucket_id.split('_')[-1]
-                    trackdata.append(trackerid)
-                    wfh = trackerid.replace('.ncc', '') in users
-                    rec = { 
-                            "email": trackerid, 
-                            "spent_time": total_duration.total_seconds(), 
-                            "call_time" : komtracker_duration.total_seconds(),
-                            "date" : datetime.now().strftime("%m/%d/%Y"), 
-                            "wfh": wfh
-                        }
-                    reportdata.append(rec)
+            # add time for afk but 
+            events = aw.get_events(f"aw-watcher-window_{email}", start=daystart, end=dayend)
+            events = [e for e in events if "title" in e.data and e.data["title"] == "KomuTracker - Google Chrome"]
+            komtracker_duration = sum((e.duration for e in events), timedelta())
+            
+            rec = { 
+                    "email": email, 
+                    "spent_time": total_duration,
+                    "call_time" : komtracker_duration.total_seconds(),
+                    "date" : datetime.now().strftime("%m/%d/%Y"), 
+                    "wfh": True
+                }
+            reportdata.append(rec)
 
         except Exception as e:
             print(f"Error: {e}")
-
-    for email in users:
-        if email not in trackdata and f"{email}.ncc" not in trackdata:
-            reportdata.append({ 
-                            "email": email, 
-                            "spent_time": 0, 
-                            "call_time" : 0, 
-                            "date" : datetime.now().strftime("%m/%d/%Y"), 
-                            "wfh": True 
-                        })
 
     mycol.insert_many(reportdata)
     #print(reportdata)
