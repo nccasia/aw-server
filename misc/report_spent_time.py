@@ -8,6 +8,20 @@ myclient = pymongo.MongoClient("mongodb://localhost:27017/")
 mydb = myclient["komubot"]
 mycol = mydb["komu_tracker_spent_time"]
 
+def get_call_time(aw, email, timeperiods):
+    query = f"""
+    events = flood(query_bucket(find_bucket("aw-watcher-window_{email}")));
+    afk = flood(query_bucket(find_bucket("aw-watcher-afk_{email}")));
+    afk = filter_keyvals(afk, "status", ["afk"]);
+    events = filter_period_intersect(events, afk);
+    RETURN = {{"events": events}};
+    """
+    events = aw.query(query=query, timeperiods=timeperiods)
+
+    events = [e for e in events[0]["events"] if "title" in e["data"] and e["data"]["title"] == "KomuTracker - Google Chrome"]
+
+    return sum((e.duration for e in events), timedelta())
+
 def get_spent_time(aw, email, timeperiods):
     canonicalQuery = queries.canonicalEvents(
         queries.DesktopQueryParams(
@@ -48,8 +62,7 @@ def main():
     dayend = daystart + timedelta(days=1)
 
     timeperiods = [(daystart.astimezone(), dayend.astimezone())]
-
-    print(users)
+        
     for email in users:
         try:            
             try:
@@ -86,4 +99,4 @@ def main():
     #print(reportdata)
 
 if __name__ == "__main__":
-    main()
+    main()    
