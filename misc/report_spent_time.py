@@ -8,8 +8,25 @@ myclient = pymongo.MongoClient("mongodb://localhost:27017/")
 mydb = myclient["komubot"]
 mycol = mydb["komu_tracker_spent_time"]
 
+def get_spent_time(aw, email, timeperiods):
+    canonicalQuery = queries.canonicalEvents(
+        queries.DesktopQueryParams(
+            bid_window=f"aw-watcher-window_{email}",
+            bid_afk=f"aw-watcher-afk_{email}",
+        )
+    )
+    query = f"""
+    {canonicalQuery}
+    duration = sum_durations(events);
+    RETURN = {{"events": events, "duration": duration}};
+    """
+
+    events = aw.query(query=query, timeperiods=timeperiods)
+    total_duration = events[0]["duration"]
+    return total_duration
+    
+
 def main():
-    trackdata = []
     reportdata = []
     users = []
 
@@ -21,8 +38,9 @@ def main():
         for user in r.json()["result"]:
             email = user["emailAddress"].split("@")[0]
             users.append(email)
-    except:
-        pass        
+    except Exception as e:
+        print(e)
+        pass
 
     # You need to set testing=False if you're going to run this on your normal instance
     aw = aw_client.ActivityWatchClient("report-spent-time", testing=False)
@@ -30,31 +48,15 @@ def main():
     dayend = daystart + timedelta(days=1)
 
     timeperiods = [(daystart.astimezone(), dayend.astimezone())]
-    
-    canonicalQuery = queries.canonicalEvents(
-        queries.DesktopQueryParams(
-            bid_window="aw-watcher-window_",
-            bid_afk="aw-watcher-afk_",
-        )
-    )
 
+    print(users)
     for email in users:
         try:            
-            canonicalQuery = queries.canonicalEvents(
-                queries.DesktopQueryParams(
-                    bid_window=f"aw-watcher-window_{email}",
-                    bid_afk=f"aw-watcher-afk_{email}",
-                )
-            )
-            query = f"""
-            {canonicalQuery}
-            duration = sum_durations(events);
-            RETURN = {{"events": events, "duration": duration}};
-            """
-            
-            events = aw.query(query=query, timeperiods=timeperiods)
-            total_duration = events[0]["duration"]
-                
+            try:
+                total_duration = get_spent_time(aw, email, timeperiods)
+            except:
+                total_duration = get_spent_time(aw, f"{email}.ncc", timeperiods)                
+
             # add time for afk but 
             events = aw.get_events(f"aw-watcher-window_{email}", start=daystart, end=dayend)
             events = [e for e in events if "title" in e.data and e.data["title"] == "KomuTracker - Google Chrome"]
@@ -70,6 +72,14 @@ def main():
             reportdata.append(rec)
 
         except Exception as e:
+            rec = { 
+                    "email": email, 
+                    "spent_time": 0,
+                    "call_time" : 0,
+                    "date" : datetime.now().strftime("%m/%d/%Y"), 
+                    "wfh": True
+                }
+            reportdata.append(rec)
             print(f"Error: {e}")
 
     mycol.insert_many(reportdata)
