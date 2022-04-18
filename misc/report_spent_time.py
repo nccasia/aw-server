@@ -8,19 +8,27 @@ myclient = pymongo.MongoClient("mongodb://localhost:27017/")
 mydb = myclient["komubot"]
 mycol = mydb["komu_tracker_spent_time"]
 
+def get_call_time_simple(aw, email, daystart, dayend):
+    events = aw.get_events(f"aw-watcher-window_{email}", start=daystart, end=dayend)
+    events = [e for e in events if "title" in e.data and e.data["title"] == "KomuTracker - Google Chrome"]
+    komutracker_duration = sum((e.duration for e in events), timedelta())
+    
+    return komutracker_duration.total_seconds()
+
 def get_call_time(aw, email, timeperiods):
     query = f"""
     events = flood(query_bucket(find_bucket("aw-watcher-window_{email}")));
+    events = filter_keyvals(events, "title", ["KomuTracker - Google Chrome"]);
     afk = flood(query_bucket(find_bucket("aw-watcher-afk_{email}")));
     afk = filter_keyvals(afk, "status", ["afk"]);
     events = filter_period_intersect(events, afk);
-    RETURN = {{"events": events}};
+    duration = sum_durations(events);
+    RETURN = {{"events": events, "duration": duration}};
     """
     events = aw.query(query=query, timeperiods=timeperiods)
+    total_duration = events[0]["duration"]
 
-    events = [e for e in events[0]["events"] if "title" in e["data"] and e["data"]["title"] == "KomuTracker - Google Chrome"]
-
-    return sum((e.duration for e in events), timedelta())
+    return total_duration
 
 def get_spent_time(aw, email, timeperiods):
     canonicalQuery = queries.canonicalEvents(
@@ -62,7 +70,7 @@ def main():
     dayend = daystart + timedelta(days=1)
 
     timeperiods = [(daystart.astimezone(), dayend.astimezone())]
-        
+    
     for email in users:
         try:            
             try:
@@ -71,14 +79,12 @@ def main():
                 total_duration = get_spent_time(aw, f"{email}.ncc", timeperiods)                
 
             # add time for afk but 
-            events = aw.get_events(f"aw-watcher-window_{email}", start=daystart, end=dayend)
-            events = [e for e in events if "title" in e.data and e.data["title"] == "KomuTracker - Google Chrome"]
-            komtracker_duration = sum((e.duration for e in events), timedelta())
+            komutracker_duration = get_call_time_simple(aw, email, daystart, dayend)
             
             rec = { 
                     "email": email, 
                     "spent_time": total_duration,
-                    "call_time" : komtracker_duration.total_seconds(),
+                    "call_time" : komutracker_duration,
                     "date" : datetime.now().strftime("%m/%d/%Y"), 
                     "wfh": True
                 }
