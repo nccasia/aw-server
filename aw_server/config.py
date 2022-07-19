@@ -7,6 +7,7 @@ port = "5600"
 storage = "mongodb"
 cors_origins = "*"
 secret = "secret"
+mongo_url = "mongodb://localhost:27017/"
 
 [server.custom_static]
 

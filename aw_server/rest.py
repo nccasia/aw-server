@@ -3,8 +3,9 @@ from types import MethodType
 from typing import Dict
 import traceback
 import json
+import re
 
-from flask import request, Blueprint, jsonify, current_app, make_response
+from flask import redirect, request, Blueprint, jsonify, current_app, make_response, session
 from flask_restx import Api, Resource, fields
 import iso8601
 from datetime import datetime, timedelta
@@ -21,6 +22,9 @@ from .config import config
 
 import time
 import base64
+
+import http.client
+import urllib.parse
 
 from bson import ObjectId
 
@@ -58,7 +62,7 @@ def host_header_check(f):
         req_secret = request.headers.get("secret", None)
 
         millisec = int(base64_decode(req_secret) or 0)
-
+        
         if current_milli_time() - millisec > 15000 and request.method != "GET":
             return {"message": "bad request"}, 400
 
@@ -67,14 +71,94 @@ def host_header_check(f):
         else:
             if req_host.split(":")[0] not in ["localhost", "127.0.0.1", "tracker.komu.vn", server_host]:
                 return {"message": f"host header is invalid (was {req_host})"}, 400
-        return f(*args, **kwargs)
+        
+    return decorator
+
+def authentication_check(f):
+    """
+    Check authenticated user
+    """
+
+    @wraps(f)
+    def decorator(*args, **kwargs):
+        origin = request.environ.get('HTTP_ORIGIN', '')
+        logger.info(f"origin: {origin}")
+        if origin == "http://tracker.komu.vn" or \
+            origin == "https://tracker.komu.vn" or \
+            (re.search("auth/callback", request.path) is not None) or \
+            (re.search("auth", request.path) is not None and request.method == "POST"):
+            return f(*args, **kwargs)
+
+        if "Authorization" in request.headers:
+            logger.info("Authorization")
+            auth_header = request.headers["Authorization"]   
+            user = get_user_info(auth_header)
+            if user is None:
+                return {"message": "not authenticated"}, 401
+            logger.info(f"user: {user}")
+            session['user'] = user
+            return f(*args, **kwargs)
+        else:
+            return {"message": "authorization header needed"}, 400 
 
     return decorator
 
+def get_user_info(token: str):
+    auth_url = "identity.nccsoft.vn"
+    headers = {"Authorization": token}
+    conn = http.client.HTTPSConnection(auth_url)
+    conn.request("GET", "/auth/realms/ncc/protocol/openid-connect/userinfo", headers=headers)
+    response = conn.getresponse()
+    logger.info(f"get_user_info status: {response.status}")
+    if response.status != 200:
+        return None
+    
+    data = json.loads(response.read())
+    return data
+
+def get_token(device_id):
+    # TODO add to config
+    auth_url = "identity.nccsoft.vn"
+    client_id = "komutracker"
+    client_secret = "YL9QxaaWjksRGFt9q97ayosySdBIpTee"
+    
+    params = urllib.parse.urlencode({
+        'grant_type': 'authorization_code',
+        'client_id': client_id,
+        'client_secret': client_secret,
+        'code': request.args["code"]
+    })
+    headers = {"Content-type": "application/x-www-form-urlencoded"}
+
+    conn = http.client.HTTPSConnection(auth_url)
+    conn.request("POST", "/auth/realms/ncc/protocol/openid-connect/token", params, headers)
+    response = conn.getresponse()
+    if response.status != 200:
+        logger.error(f"Auth failed for device: {device_id}")
+        return None
+    return json.loads(response.read())
+
+def log_out(current_user):
+    # TODO add to config
+    auth_url = "identity.nccsoft.vn"
+    client_id = "komutracker"
+    client_secret = "YL9QxaaWjksRGFt9q97ayosySdBIpTee"
+    
+    headers = {"Content-type": "application/x-www-form-urlencoded"}
+
+    conn = http.client.HTTPSConnection(auth_url)
+    if current_user is not None:
+        params = urllib.parse.urlencode({
+            'client_id': client_id,
+            'client_secret': client_secret,
+            'refresh_token': current_user["refresh_token"]
+        })
+        conn.request("POST", "/auth/realms/ncc/protocol/openid-connect/logout", params, headers)
+    
+    
 
 blueprint = Blueprint("api", __name__, url_prefix="/api")
-api = Api(blueprint, doc="/", decorators=[host_header_check])
-
+api = Api(blueprint, doc="/", decorators=[authentication_check])
 
 # TODO: Clean up JSONEncoder code?
 # Move to server.py
@@ -187,6 +271,7 @@ class BucketResource(Resource):
     @api.expect(create_bucket)
     @copy_doc(ServerAPI.create_bucket)
     def post(self, bucket_id):
+        logger.info(bucket_id)
         data = request.get_json()
         bucket_created = current_app.api.create_bucket(
             bucket_id,
@@ -307,7 +392,9 @@ class HeartbeatResource(Resource):
     @copy_doc(ServerAPI.heartbeat)
     def post(self, bucket_id):
         heartbeat = Event(**request.get_json())
-
+        logger.debug(
+            f"Received heartbeat in bucket '{bucket_id}'"
+        )
         if "pulsetime" in request.args:
             pulsetime = float(request.args["pulsetime"])
         else:
@@ -402,3 +489,58 @@ class LogResource(Resource):
     @copy_doc(ServerAPI.get_log)
     def get(self):
         return current_app.api.get_log(), 200
+
+
+# AUTH
+
+@api.route("/0/auth")
+class AuthResource(Resource):
+    def post(self):
+        data = request.get_json()
+        current_user = current_app.api.get_user_by_device(data["device_id"])
+        logger.info(f"get token for device: {data['device_id']}")
+        if current_user is None:
+            return None
+        # Check valid token
+        user = get_user_info("Bearer " + current_user["access_token"])
+        if user is None:
+            logger.warning(f"Token expired")
+            return None
+        return current_user["access_token"]
+
+@api.route("/0/auth/me")
+class AuthResource(Resource):
+    def get(self):
+        return session['user']
+
+@api.route("/0/auth/callback")
+class AuthCallbackResource(Resource):
+    def get(self):
+        device_id = request.args["state"]
+        logger.info(f"Auth callback for device: {device_id}")
+        data = get_token(device_id)
+        if data is None:
+            return
+        token = data["access_token"]
+        user = get_user_info("Bearer " + token)
+        logger.info(f"Auth success for: {user['email']}")
+        
+        # logout
+        old_user = current_app.api.get_user_by_email(user['email'])
+        
+        if old_user is not None:
+            logger.info(f"old_user: {old_user['email']}")
+            log_out(old_user)
+        
+        current_app.api.save_user({
+            "device_id": device_id,
+            "email": user['email'],
+            "access_token": data["access_token"], 
+            "refresh_token": data["refresh_token"]
+        })
+        
+        user_name = re.split("@", user['email'], 1)[0]
+        
+        return redirect(f"http://tracker.komu.vn/#/activity/{user_name}/view/", code=302)
+
+

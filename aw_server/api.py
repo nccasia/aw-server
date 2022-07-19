@@ -314,3 +314,16 @@ class ServerAPI:
             for line in log_file.readlines()[::-1]:
                 payload.append(json.loads(line))
         return payload, 200
+
+    def save_user(self, user_data):
+        """Save token to db"""
+        
+        return self.db.save_user(user_data)
+    
+    def get_user_by_device(self, device_id) -> str:
+        user = self.db.get_user({"device_id": device_id})
+        return json.loads(user)
+    
+    def get_user_by_email(self, email) -> str:
+        user = self.db.get_user({"email": email})
+        return json.loads(user)
