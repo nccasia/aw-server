@@ -43,3 +43,4 @@ jobs:
           body: "Release new Build"
           token: ${{ secrets.YOUR_GITHUB_TOKEN }}
           tag: "aw-server"
+          prerelease: true
