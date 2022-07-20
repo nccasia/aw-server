@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - cicd
+    tags:
+      - '*'
 
 jobs:
   build_server:
@@ -34,4 +36,9 @@ jobs:
           pip install pymongo waitress
           cd ~/miniconda3/envs/build-aw-server/ && zip -r build-aw-server.zip . && cp build-aw-server.zip ~/
           cd ~/ && conda deactivate && conda remove -n build-aw-server --all -y
-
+      
+      - uses: ncipollo/release-action@v1
+        with:
+          artifacts: "/home/thiennguyen/build-aw-server.zip"
+          body: "Release new Build"
+          token: ${{ secrets.YOUR_GITHUB_TOKEN }}
