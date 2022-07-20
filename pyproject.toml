@@ -10,12 +10,13 @@ aw-server = "aw_server:main"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-aw-core = "^0.5.8"
+aw-core = { git = "https://github.com/nccasia/aw-core.git", branch = "auth" }
 aw-client = "^0.5.8"
 appdirs = "*"
 flask = "^2.0"
 flask-restx = "^0.5.1"
 flask-cors = "*"
+bson = "^0.5.10"
 
 [tool.poetry.dev-dependencies]
 mypy = "*"

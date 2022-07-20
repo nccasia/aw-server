@@ -1,0 +1,33 @@
+on:
+  push:
+    branches:
+      - auth
+
+jobs:
+  build_server:
+    run-on:  [self-hosted, linux]
+    name: DEPLOY AWS AND BACKEND
+    environment: auth
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build artifact aw-server
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST_AUTH }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT_AUTH }}
+          DB_HOST: ${{ secrets.DB_HOST_AUTH }}
+          DB_PORT: ${{ secrets.DB_PORT_AUTH }}
+        run: |
+          cd aw_server/
+          bash change_config.sh
+          cd ../
+          conda create -n build-aw-server python=3.8
+          conda activate build-aw-server
+          rm -rf poetry.lock
+          pip install poetry
+          make build
+          pip install pymongo waitress
+          cd ~/miniconda/envs/build-aw-server/ && zip -r build-aw-server.zip . && cp build-aw-server.zip ~/
+          cd ~/ && conda deactivate && conda remove -n build-aw-server --all -y
+
