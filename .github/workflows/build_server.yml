@@ -1,7 +1,7 @@
 on:
   push:
     branches:
-      - auth
+      - cicd
 
 jobs:
   build_server:
