@@ -32,6 +32,6 @@ jobs:
           pip install poetry
           make build
           pip install pymongo waitress
-          cd ~/miniconda/envs/build-aw-server/ && zip -r build-aw-server.zip . && cp build-aw-server.zip ~/
+          cd ~/miniconda3/envs/build-aw-server/ && zip -r build-aw-server.zip . && cp build-aw-server.zip ~/
           cd ~/ && conda deactivate && conda remove -n build-aw-server --all -y
 
