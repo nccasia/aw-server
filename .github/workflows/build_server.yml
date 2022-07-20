@@ -5,8 +5,8 @@ on:
 
 jobs:
   build_server:
-    run-on:  [self-hosted, linux]
-    name: DEPLOY AWS AND BACKEND
+    runs-on:  [self-hosted, linux]
+    name: BUILD AW-SERVER
     environment: auth
     steps:
       - name: Checkout
