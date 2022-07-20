@@ -42,6 +42,7 @@ jobs:
           artifacts: "/home/thiennguyen/build-aw-server.zip"
           body: "Release new Build"
           token: ${{ secrets.YOUR_GITHUB_TOKEN }}
+          tag: aw-server
           replacesArtifacts: false
           allowUpdates: true
           prerelease: true
