@@ -24,7 +24,7 @@ jobs:
           cd aw_server/
           bash change_config.sh
           cd ../
-          bash /home/thiennguyen/miniconda3/etc/profile.d/conda.sh
+          source /home/thiennguyen/miniconda3/etc/profile.d/conda.sh
           conda create -n build-aw-server python=3.8 -y
           conda init bash
           conda activate build-aw-server
