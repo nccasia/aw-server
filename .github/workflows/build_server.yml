@@ -1,3 +1,5 @@
+
+name: Build AW SERVER
 on:
   push:
     branches:
@@ -23,6 +25,7 @@ jobs:
           bash change_config.sh
           cd ../
           conda create -n build-aw-server python=3.8 -y
+          conda init bash
           conda activate build-aw-server
           rm -rf poetry.lock
           pip install poetry
