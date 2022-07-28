@@ -82,7 +82,12 @@ def authentication_check(f):
     @wraps(f)
     def decorator(*args, **kwargs):
         origin = request.environ.get('HTTP_ORIGIN', '')
-        logger.info(f"origin: {origin}")
+        device_id = request.headers.get("device_id", None)
+        logger.info(f"\n \
+            Device Id: {device_id}\n \
+            Origin: {origin}\n \
+            Method: {request.method}\n \
+            Path: {request.path}")
         if origin == "http://tracker.komu.vn" or \
             origin == "https://tracker.komu.vn" or \
             (re.search("auth/callback", request.path) is not None) or \
@@ -90,12 +95,13 @@ def authentication_check(f):
             return f(*args, **kwargs)
 
         if "Authorization" in request.headers:
-            logger.info("Authorization")
+            logger.info("Start authentication check")
             auth_header = request.headers["Authorization"]   
             user = get_user_info(auth_header)
             if user is None:
+                logger.info("Auth failed")
                 return {"message": "not authenticated"}, 401
-            logger.info(f"user: {user}")
+            logger.info(f"Current User: {user.get('email'), user.get('device_id')}")
             session['user'] = user
             return f(*args, **kwargs)
         else:
@@ -103,7 +109,11 @@ def authentication_check(f):
 
     return decorator
 
-def get_user_info(token: str):
+def get_user_info(token: str, is_callback=False):
+    if not is_callback:
+        user = current_app.api.get_user_by_token(token.replace("Bearer ", ""))
+        if user is None:
+            return None
     auth_url = "identity.nccsoft.vn"
     headers = {"Authorization": token}
     conn = http.client.HTTPSConnection(auth_url)
@@ -145,7 +155,7 @@ def log_out(current_user):
     client_secret = "YL9QxaaWjksRGFt9q97ayosySdBIpTee"
     
     headers = {"Content-type": "application/x-www-form-urlencoded"}
-
+    logger.info(f"log_out: {current_user}")
     conn = http.client.HTTPSConnection(auth_url)
     if current_user is not None:
         params = urllib.parse.urlencode({
@@ -522,15 +532,8 @@ class AuthCallbackResource(Resource):
         if data is None:
             return
         token = data["access_token"]
-        user = get_user_info("Bearer " + token)
+        user = get_user_info("Bearer " + token, True)
         logger.info(f"Auth success for: {user['email']}")
-        
-        # logout
-        old_user = current_app.api.get_user_by_email(user['email'])
-        
-        if old_user is not None:
-            logger.info(f"old_user: {old_user['email']}")
-            log_out(old_user)
         
         current_app.api.save_user({
             "device_id": device_id,

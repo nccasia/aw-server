@@ -327,3 +327,7 @@ class ServerAPI:
     def get_user_by_email(self, email) -> str:
         user = self.db.get_user({"email": email})
         return json.loads(user)
+    
+    def get_user_by_token(self, token) -> str:
+        user = self.db.get_user({"access_token": token})
+        return json.loads(user)
