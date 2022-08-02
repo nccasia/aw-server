@@ -52,6 +52,12 @@ class ServerAPI:
         self.db = db
         self.testing = testing
         self.last_event = {}  # type: dict
+        user_data = {}
+        users = self.db.get_all_users()
+        for user in users:
+            del [user["_id"]]
+            user_data[user['device_id']] = user
+        self.user_data = user_data
 
     def get_info(self) -> Dict[str, Dict]:
         """Get server info"""
@@ -315,19 +321,31 @@ class ServerAPI:
                 payload.append(json.loads(line))
         return payload, 200
 
-    def save_user(self, user_data):
+    def save_user(self, user):
         """Save token to db"""
+        old_user = json.loads(self.db.get_user({"email": user['email']}))
+        if old_user is not None:
+            if old_user['device_id'] == user['device_id']:
+                return old_user
+            else:
+                del self.user_data[old_user['device_id']]
+
+        self.user_data[user['device_id']] = user
         
-        return self.db.save_user(user_data)
+        self.db.save_user(user)
+        if '_id' in user:
+            del user['_id'] 
     
-    def get_user_by_device(self, device_id) -> str:
-        user = self.db.get_user({"device_id": device_id})
-        return json.loads(user)
+        return user
+    
+    def get_user_token(self, device_id) -> str:
+        return self.user_data[device_id]["access_token"] if device_id in self.user_data else None
     
     def get_user_by_email(self, email) -> str:
         user = self.db.get_user({"email": email})
         return json.loads(user)
     
-    def get_user_by_token(self, token) -> str:
-        user = self.db.get_user({"access_token": token})
-        return json.loads(user)
+    def get_user_by_token(self, device_id, token) -> str:
+        if device_id in self.user_data and self.user_data[device_id]["access_token"] == token:
+            return self.user_data[device_id]
+        return None

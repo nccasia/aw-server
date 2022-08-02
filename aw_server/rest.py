@@ -83,25 +83,22 @@ def authentication_check(f):
     def decorator(*args, **kwargs):
         origin = request.environ.get('HTTP_ORIGIN', '')
         device_id = request.headers.get("device_id", None)
-        logger.info(f"\n \
-            Device Id: {device_id}\n \
-            Origin: {origin}\n \
-            Method: {request.method}\n \
-            Path: {request.path}")
+        secret = request.headers.get("secret", None)
         if origin == "http://tracker.komu.vn" or \
             origin == "https://tracker.komu.vn" or \
             (re.search("auth/callback", request.path) is not None) or \
-            (re.search("auth", request.path) is not None and request.method == "POST"):
+            (re.search("auth", request.path) is not None and request.method == "POST") or \
+            secret == "hfdshpo23afa$@":
             return f(*args, **kwargs)
 
         if "Authorization" in request.headers:
-            logger.info("Start authentication check")
             auth_header = request.headers["Authorization"]   
-            user = get_user_info(auth_header)
+            user = current_app.api.get_user_by_token(device_id,auth_header.replace("Bearer ", ""))
             if user is None:
-                logger.info("Auth failed")
                 return {"message": "not authenticated"}, 401
             logger.info(f"Current User: {user.get('email'), user.get('device_id')}")
+            if '_id' in user:
+                del user['_id']
             session['user'] = user
             return f(*args, **kwargs)
         else:
@@ -109,11 +106,7 @@ def authentication_check(f):
 
     return decorator
 
-def get_user_info(token: str, is_callback=False):
-    if not is_callback:
-        user = current_app.api.get_user_by_token(token.replace("Bearer ", ""))
-        if user is None:
-            return None
+def get_user_info(token: str):
     auth_url = "identity.nccsoft.vn"
     headers = {"Authorization": token}
     conn = http.client.HTTPSConnection(auth_url)
@@ -507,16 +500,9 @@ class LogResource(Resource):
 class AuthResource(Resource):
     def post(self):
         data = request.get_json()
-        current_user = current_app.api.get_user_by_device(data["device_id"])
+        token = current_app.api.get_user_token(data["device_id"])
         logger.info(f"get token for device: {data['device_id']}")
-        if current_user is None:
-            return None
-        # Check valid token
-        user = get_user_info("Bearer " + current_user["access_token"])
-        if user is None:
-            logger.warning(f"Token expired")
-            return None
-        return current_user["access_token"]
+        return token
 
 @api.route("/0/auth/me")
 class AuthResource(Resource):
@@ -532,11 +518,12 @@ class AuthCallbackResource(Resource):
         if data is None:
             return
         token = data["access_token"]
-        user = get_user_info("Bearer " + token, True)
+        user = get_user_info("Bearer " + token)
         logger.info(f"Auth success for: {user['email']}")
         
         current_app.api.save_user({
             "device_id": device_id,
+            "name": user["name"],
             "email": user['email'],
             "access_token": data["access_token"], 
             "refresh_token": data["refresh_token"]

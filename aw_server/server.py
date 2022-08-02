@@ -115,7 +115,7 @@ def _start(
         serve(app, 
             host=host,
             port=port,
-            threads=4,
+            threads=16,
         )
         '''
         log = logging.getLogger('werkzeug')
