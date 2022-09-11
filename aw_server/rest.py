@@ -84,11 +84,15 @@ def authentication_check(f):
         origin = request.environ.get('HTTP_ORIGIN', '')
         device_id = request.headers.get("device_id", None)
         secret = request.headers.get("secret", None)
+        if re.search("DESKTOP", request.path):
+            logger.info(f"ip address: {request.remote_addr}")
+            logger.info(f"Device Id: {device_id}")
+            return {"message": "bad request"}, 400  
         if origin == "http://tracker.komu.vn" or \
             origin == "https://tracker.komu.vn" or \
             (re.search("auth/callback", request.path) is not None) or \
             (re.search("auth", request.path) is not None and request.method == "POST") or \
-            secret == "hfdshpo23afa$@":
+            secret is not None:
             return f(*args, **kwargs)
 
         if "Authorization" in request.headers:
