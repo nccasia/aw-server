@@ -55,7 +55,6 @@ class ServerAPI:
         user_data = {}
         users = self.db.get_all_users()
         for user in users:
-            del [user["_id"]]
             user_data[user['device_id']] = user
         self.user_data = user_data
 
@@ -324,7 +323,7 @@ class ServerAPI:
     def save_user(self, user):
         """Save token to db"""
         old_user = json.loads(self.db.get_user({"email": user['email']}))
-        if old_user is not None:
+        if old_user is not None and '_id' in old_user:
             if old_user['device_id'] == user['device_id']:
                 return old_user
             else:
