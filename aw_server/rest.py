@@ -90,6 +90,7 @@ def authentication_check(f):
             return {"message": "bad request"}, 400  
         if origin == "http://tracker.komu.vn" or \
             origin == "https://tracker.komu.vn" or \
+            origin == "http://localhost:27180" or \
             (re.search("auth/callback", request.path) is not None) or \
             (re.search("auth", request.path) is not None and request.method == "POST") or \
             secret is not None:
@@ -100,7 +101,7 @@ def authentication_check(f):
             user = current_app.api.get_user_by_token(device_id,auth_header.replace("Bearer ", ""))
             if user is None:
                 return {"message": "not authenticated"}, 401
-            logger.info(f"Current User: {user.get('email'), user.get('device_id')}")
+            # logger.info(f"Current User: {user.get('email'), user.get('device_id')}")
             if '_id' in user:
                 del user['_id']
             session['user'] = user
@@ -505,7 +506,7 @@ class AuthResource(Resource):
     def post(self):
         data = request.get_json()
         token = current_app.api.get_user_token(data["device_id"])
-        logger.info(f"get token for device: {data['device_id']}")
+        # logger.info(f"get token for device: {data['device_id']}")
         return token
 
 @api.route("/0/auth/me")
@@ -537,4 +538,18 @@ class AuthCallbackResource(Resource):
         
         return redirect(f"http://tracker.komu.vn/#/activity/{user_name}/view/", code=302)
 
+# REPORT
 
+@api.route("/0/report/<string:email>")
+class Report(Resource):
+    def get(self, email):
+        day = request.args.get("day")
+        report = current_app.api.get_user_report(email, day)
+        return report
+
+@api.route("/0/report")
+class ReportAll(Resource):
+    def get(self):
+        day = request.args.get("day")
+        response = current_app.api.report_all(day)
+        return response

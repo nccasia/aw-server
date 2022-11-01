@@ -1,12 +1,14 @@
 from typing import Dict, List, Any, Optional
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from socket import gethostname
 from pathlib import Path
 from uuid import uuid4
 import functools
 import json
 import logging
+from aw_datastore.storages.peewee import UserModel
 import iso8601
+import pytz
 
 from aw_core.models import Event
 from aw_core.log import get_log_file_path
@@ -18,6 +20,8 @@ from aw_transform import heartbeat_merge
 from .__about__ import __version__
 
 from .exceptions import BadRequest, NotFound, Unauthorized
+
+from .tracker_report import TrackerReport
 
 
 logger = logging.getLogger(__name__)
@@ -57,6 +61,7 @@ class ServerAPI:
         for user in users:
             user_data[user['device_id']] = user
         self.user_data = user_data
+        self.tracker_report = TrackerReport(db=db, query2=self.query2)
 
     def get_info(self) -> Dict[str, Dict]:
         """Get server info"""
@@ -70,15 +75,16 @@ class ServerAPI:
 
     def get_buckets(self) -> Dict[str, Dict]:
         """Get dict {bucket_name: Bucket} of all buckets"""
-        logger.debug("Received get request for buckets")
+        logger.info("Received get request for buckets")
         buckets = self.db.buckets()
-        for b in buckets:
-            # TODO: Move this code to aw-core?
-            last_events = self.db[b].get(limit=1)
-            if len(last_events) > 0:
-                last_event = last_events[0]
-                last_updated = last_event.timestamp + last_event.duration
-                buckets[b]["last_updated"] = last_updated.isoformat()
+        logger.info(f"received {len(buckets)}")
+        # for b in buckets:
+        #     # TODO: Move this code to aw-core?
+        #     last_events = self.db[b].get(limit=1)
+        #     if len(last_events) > 0:
+        #         last_event = last_events[0]
+        #         last_updated = last_event.timestamp + last_event.duration
+        #         buckets[b]["last_updated"] = last_updated.isoformat()
         return buckets
 
     @check_bucket_exists
@@ -322,7 +328,10 @@ class ServerAPI:
 
     def save_user(self, user):
         """Save token to db"""
-        old_user = json.loads(self.db.get_user({"email": user['email']}))
+        try:
+            old_user = json.loads(self.db.get_user({"email": user['email']}))
+        except:
+            old_user = self.db.get_user({"email": user['email']})
         if old_user is not None and '_id' in old_user:
             if old_user['device_id'] == user['device_id']:
                 return old_user
@@ -346,5 +355,42 @@ class ServerAPI:
     
     def get_user_by_token(self, device_id, token) -> str:
         if device_id in self.user_data and self.user_data[device_id]["access_token"] == token:
+            self.update_user_last_use(device_id)
             return self.user_data[device_id]
         return None
+
+    def get_user_report(self, email, day=None):
+        report = self.tracker_report.report_user(email, day)
+        report["spent_time"] = str(timedelta(seconds=report["spent_time"]))
+        report["call_time"] = str(timedelta(seconds=report["call_time"]))
+        report["active_time"] = str(timedelta(seconds=report["active_time"]))
+        report["date"] = day or report["date"]
+        return report
+
+    def report_all(self, day = None):
+        report = self.tracker_report.report(day)
+        return report
+
+    def update_user_last_use(self, device_id):
+        today = datetime.now(timezone.utc).replace(tzinfo=pytz.utc).astimezone(pytz.timezone('Asia/Saigon')).date()
+        user = self.user_data[device_id]
+        last_used_at = user['last_used_at']
+        if last_used_at == None:
+            last_used_at = datetime.now(timezone.utc).isoformat()
+            user['last_used_at'] = last_used_at
+            self.user_data[device_id] = user
+            UserModel.update(last_used_at=datetime.fromisoformat(last_used_at)).where(UserModel.id == user['id']).execute()
+        else:
+            if not isinstance(last_used_at, str):
+                last_used_at = last_used_at.isoformat()
+
+            user_login_day = datetime.fromisoformat(last_used_at).replace(tzinfo=pytz.utc).astimezone(pytz.timezone('Asia/Saigon')).date()
+            
+            if (today - user_login_day).days != 0:
+                last_used_at = datetime.now(timezone.utc).isoformat()
+                user['last_used_at'] = last_used_at
+                self.user_data[device_id] = user
+                UserModel.update(last_used_at=datetime.fromisoformat(last_used_at)).where(UserModel.id == user['id']).execute()
+                pass
+            else:
+                user['last_used_at'] = last_used_at
