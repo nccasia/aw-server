@@ -4,9 +4,10 @@ default_config = """
 [server]
 host = "0.0.0.0"
 port = "5600"
-storage = "mongodb"
+storage = "peewee"
 cors_origins = "*"
 secret = "secret"
+mongo_url = "mongodb://localhost:27017/"
 
 [server.custom_static]
 

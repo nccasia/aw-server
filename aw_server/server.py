@@ -26,13 +26,12 @@ class AWFlask(Flask):
 
         # Is set on later initialization
         self.api = None  # type: ServerAPI
-
+        
 
 def create_app(
     host: str, testing=True, storage_method=None, cors_origins=[], custom_static=dict()
 ) -> AWFlask:
     app = AWFlask("aw-server", static_folder=static_folder, static_url_path="")
-
     if storage_method is None:
         storage_method = aw_datastore.get_storage_methods()["memory"]
 
@@ -50,7 +49,8 @@ def create_app(
 
     db = Datastore(storage_method, testing=testing)
     app.api = ServerAPI(db=db, testing=testing)
-
+    # TODO get from config
+    app.secret_key = "komutracker-secretkey"
     # needed for host-header check
     app.config["HOST"] = host
     
@@ -115,7 +115,7 @@ def _start(
         serve(app, 
             host=host,
             port=port,
-            threads=4,
+            threads=16,
         )
         '''
         log = logging.getLogger('werkzeug')
