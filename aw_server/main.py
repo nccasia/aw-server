@@ -8,7 +8,7 @@ from .config import config
 from . import __version__
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.ERROR)
+# logger.setLevel(logging.INFO)
 
 def main():
     """Called from the executable and __main__.py"""

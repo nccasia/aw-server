@@ -5,8 +5,8 @@ from typing import List, Dict
 from flask import Flask, Blueprint, current_app, send_from_directory
 from flask_cors import CORS
 
+from aw_datastore.datastore import Datastore
 import aw_datastore
-from aw_datastore import Datastore
 from .custom_static import get_custom_static_blueprint
 
 from .log import FlaskLogHandler

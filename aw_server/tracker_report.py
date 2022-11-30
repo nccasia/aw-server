@@ -72,6 +72,7 @@ class TrackerReport:
 
         try:
             timeperiods = cal_timeperiods(day)
+            logger.info(f"Timeperiods: {timeperiods}")
             try:
                 spent_time = self.get_spent_time(email, timeperiods)
                 call_time = self.get_call_time(email, timeperiods)
@@ -108,7 +109,6 @@ class TrackerReport:
             }
             print(f"Error: {e}")
             return rec
-
     def get_call_time(self, email, timeperiods) -> timedelta:
         query = []
         query.append(
@@ -152,20 +152,24 @@ class TrackerReport:
         # return total_call_time
 
     def get_spent_time(self, email, timeperiods) -> timedelta:
+        # ! Changing to only consider not_afk, ignore window_events
         query = []
-        query.append(
-            f"events = flood(query_bucket(\"aw-watcher-window_{email}\"));")
+        # query.append(
+        #     f"events = flood(query_bucket(\"aw-watcher-window_{email}\"));")
         query.append(
             f"not_afk = flood(query_bucket(\"aw-watcher-afk_{email}\"));")
         query.append(
             "not_afk = filter_keyvals(not_afk, \"status\", [\"not-afk\"]);")
-        query.append("browser_events = [];")
-        query.append(
-            "audible_events = filter_keyvals(browser_events, \"audible\", [true]);")
-        query.append("not_afk = period_union(not_afk, audible_events);")
-        query.append("events = filter_period_intersect(events, not_afk);")
-        query.append("events = categorize(events, [[[\"Work\"],{\"type\":\"regex\",\"regex\":\"Google Docs|libreoffice|ReText|xlsx|docx|json|mstsc|Remote Desktop|Terminal\"}],[[\"Work\",\"Programming\"],{\"type\":\"regex\",\"regex\":\"GitHub|Stack Overflow|BitBucket|Gitlab|vim|Spyder|kate|Ghidra|Scite|Jira|Visual Studio|Mongo|cmd\"}],[[\"Work\",\"Programming\",\"IDEs\"],{\"type\":\"regex\",\"regex\":\"deven|code|idea64\",\"ignore_case\":true}],[[\"Work\",\"Programming\",\"Others\"],{\"type\":\"regex\",\"regex\":\"Bitbucket|gitlab|github|mintty|pgadmin\",\"ignore_case\":true}],[[\"Work\",\"3D\"],{\"type\":\"regex\",\"regex\":\"Blender\"}],[[\"Media\",\"Games\"],{\"type\":\"regex\",\"regex\":\"Minecraft|RimWorld\"}],[[\"Media\",\"Video\"],{\"type\":\"regex\",\"regex\":\"YouTube|Plex|VLC\"}],[[\"Media\",\"Social Media\"],{\"type\":\"regex\",\"regex\":\"reddit|Facebook|Twitter|Instagram|devRant\",\"ignore_case\":true}],[[\"Media\",\"Music\"],{\"type\":\"regex\",\"regex\":\"Spotify|Deezer\",\"ignore_case\":true}],[[\"Comms\",\"IM\"],{\"type\":\"regex\",\"regex\":\"Messenger|Telegram|Signal|WhatsApp|Rambox|Slack|Riot|Discord|Nheko|Teams|Skype\",\"ignore_case\":true}],[[\"Comms\",\"Email\"],{\"type\":\"regex\",\"regex\":\"Gmail|Thunderbird|mutt|alpine\"}]]);")
-        query.append("duration = sum_durations(events);")
+        # query.append("browser_events = [];")
+        # ? browser_events is empty so audible_events is alway empty?
+        # query.append(
+            # "audible_events = filter_keyvals(browser_events, \"audible\", [true]);")
+        # query.append("not_afk = period_union(not_afk, audible_events);")
+        # ? Only keep event that is not afk and is recorded as an window event
+        # query.append("events = filter_period_intersect(events, not_afk);")
+        # query.append("events = categorize(events, [[[\"Work\"],{\"type\":\"regex\",\"regex\":\"Google Docs|libreoffice|ReText|xlsx|docx|json|mstsc|Remote Desktop|Terminal\"}],[[\"Work\",\"Programming\"],{\"type\":\"regex\",\"regex\":\"GitHub|Stack Overflow|BitBucket|Gitlab|vim|Spyder|kate|Ghidra|Scite|Jira|Visual Studio|Mongo|cmd\"}],[[\"Work\",\"Programming\",\"IDEs\"],{\"type\":\"regex\",\"regex\":\"deven|code|idea64\",\"ignore_case\":true}],[[\"Work\",\"Programming\",\"Others\"],{\"type\":\"regex\",\"regex\":\"Bitbucket|gitlab|github|mintty|pgadmin\",\"ignore_case\":true}],[[\"Work\",\"3D\"],{\"type\":\"regex\",\"regex\":\"Blender\"}],[[\"Media\",\"Games\"],{\"type\":\"regex\",\"regex\":\"Minecraft|RimWorld\"}],[[\"Media\",\"Video\"],{\"type\":\"regex\",\"regex\":\"YouTube|Plex|VLC\"}],[[\"Media\",\"Social Media\"],{\"type\":\"regex\",\"regex\":\"reddit|Facebook|Twitter|Instagram|devRant\",\"ignore_case\":true}],[[\"Media\",\"Music\"],{\"type\":\"regex\",\"regex\":\"Spotify|Deezer\",\"ignore_case\":true}],[[\"Comms\",\"IM\"],{\"type\":\"regex\",\"regex\":\"Messenger|Telegram|Signal|WhatsApp|Rambox|Slack|Riot|Discord|Nheko|Teams|Skype\",\"ignore_case\":true}],[[\"Comms\",\"Email\"],{\"type\":\"regex\",\"regex\":\"Gmail|Thunderbird|mutt|alpine\"}]]);")
+        query.append("duration = sum_durations(not_afk);")
+        # query.append("duration = sum_durations(events);")
         query.append("RETURN = {\"duration\": duration};")
 
         result = []
