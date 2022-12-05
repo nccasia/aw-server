@@ -166,8 +166,8 @@ def log_out(current_user):
     
 
 blueprint = Blueprint("api", __name__, url_prefix="/api")
-# api = Api(blueprint, doc="/", decorators=[authentication_check])
-api = Api(blueprint, doc="/")
+api = Api(blueprint, doc="/", decorators=[authentication_check])
+# api = Api(blueprint, doc="/")
 
 # TODO: Clean up JSONEncoder code?
 # Move to server.py
@@ -547,18 +547,27 @@ class Report(Resource):
         day = request.args.get("day")
         report = current_app.api.get_user_report(email, day)
         return report
-@api.route("/0/report/date/<string:date>")
+@api.route("/0/report")
 class ReportEmployeesOnDate(Resource):
-    def post(self, date):
+    def post(self):
+        day = request.args.get("day")
         req = request.get_json()
         if "emails" in req:
             emails = req["emails"]
         else:
             raise BadRequest("MissingParameter", "Missing required parameter emails") 
-        logger.info(f"Report emails on date {date}")
+        logger.info(f"Reporting emails on date {day}")
         res = []
         for email in emails:
-            res.append(current_app.api.get_user_report(email,date))
+            raw_report = current_app.api.get_user_report(email,day)
+            raw_report.pop("spent_time", None)
+            raw_report.pop("call_time", None)
+            raw_report.pop("str_active_time", None)
+            raw_report.pop("str_spent_time", None)
+            raw_report.pop("str_call_time", None)
+            raw_report.pop("date", None)
+            raw_report.pop("wfh", None)
+            res.append(raw_report)
         return res, 200
 @api.route("/0/report")
 class ReportAll(Resource):
