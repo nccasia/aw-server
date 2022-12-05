@@ -11,15 +11,24 @@ def _dt_is_tzaware(dt: datetime) -> bool:
 
 
 def str_to_date(day: str = "") -> date:
+    '''Convert string `day` (format: dd/MM/YYYY or YYYY/MM/dd) to type date
+    Return today if day is not in the right format 
+    '''
     try:
         if day:
             day = list(map(int, day.split("/")))
-            date = datetime(day[2], day[1], day[0]).date()
+            # format: YYYY/MM/dd
+            if day[0] > 1000:
+                date = datetime(day[0], day[1], day[2]).date()
+            # format: dd/MM/YYYY
+            else:
+                date = datetime(day[2], day[1], day[0]).date()
             return date
         else:
             date = datetime.combine(datetime.now().date(), time()).date()
             return date
-    except:
+    except Exception as e:
+        logger.error(f"Error in formating {day}: {e}")
         return datetime.combine(datetime.now().date(), time()).date()
 
 def format_timedelta(time: timedelta) -> str:
@@ -107,7 +116,7 @@ class TrackerReport:
                 "date": day,
                 "wfh": wfh
             }
-            print(f"Error: {e}")
+            logger.error(f"Error: {e}")
             return rec
     def get_call_time(self, email, timeperiods) -> timedelta:
         query = []
@@ -157,20 +166,21 @@ class TrackerReport:
         # query.append(
         #     f"events = flood(query_bucket(\"aw-watcher-window_{email}\"));")
         query.append(
-            f"not_afk = flood(query_bucket(\"aw-watcher-afk_{email}\"));")
+            f"not_afk = query_bucket(\"aw-watcher-afk_{email}\");")
         query.append(
             "not_afk = filter_keyvals(not_afk, \"status\", [\"not-afk\"]);")
-        # query.append("browser_events = [];")
+        query.append("not_afk_process = merge_events(not_afk);")
+        query.append("not_afk_process = flood(not_afk_process);")
         # ? browser_events is empty so audible_events is alway empty?
         # query.append(
             # "audible_events = filter_keyvals(browser_events, \"audible\", [true]);")
         # query.append("not_afk = period_union(not_afk, audible_events);")
-        # ? Only keep event that is not afk and is recorded as an window event
+        # ? Only keep event that is not afk, ignore whether if there is a recorded window event
         # query.append("events = filter_period_intersect(events, not_afk);")
         # query.append("events = categorize(events, [[[\"Work\"],{\"type\":\"regex\",\"regex\":\"Google Docs|libreoffice|ReText|xlsx|docx|json|mstsc|Remote Desktop|Terminal\"}],[[\"Work\",\"Programming\"],{\"type\":\"regex\",\"regex\":\"GitHub|Stack Overflow|BitBucket|Gitlab|vim|Spyder|kate|Ghidra|Scite|Jira|Visual Studio|Mongo|cmd\"}],[[\"Work\",\"Programming\",\"IDEs\"],{\"type\":\"regex\",\"regex\":\"deven|code|idea64\",\"ignore_case\":true}],[[\"Work\",\"Programming\",\"Others\"],{\"type\":\"regex\",\"regex\":\"Bitbucket|gitlab|github|mintty|pgadmin\",\"ignore_case\":true}],[[\"Work\",\"3D\"],{\"type\":\"regex\",\"regex\":\"Blender\"}],[[\"Media\",\"Games\"],{\"type\":\"regex\",\"regex\":\"Minecraft|RimWorld\"}],[[\"Media\",\"Video\"],{\"type\":\"regex\",\"regex\":\"YouTube|Plex|VLC\"}],[[\"Media\",\"Social Media\"],{\"type\":\"regex\",\"regex\":\"reddit|Facebook|Twitter|Instagram|devRant\",\"ignore_case\":true}],[[\"Media\",\"Music\"],{\"type\":\"regex\",\"regex\":\"Spotify|Deezer\",\"ignore_case\":true}],[[\"Comms\",\"IM\"],{\"type\":\"regex\",\"regex\":\"Messenger|Telegram|Signal|WhatsApp|Rambox|Slack|Riot|Discord|Nheko|Teams|Skype\",\"ignore_case\":true}],[[\"Comms\",\"Email\"],{\"type\":\"regex\",\"regex\":\"Gmail|Thunderbird|mutt|alpine\"}]]);")
-        query.append("duration = sum_durations(not_afk);")
+        query.append("duration = sum_durations(not_afk_process);")
         # query.append("duration = sum_durations(events);")
-        query.append("RETURN = {\"duration\": duration};")
+        query.append("RETURN = {\"duration\": duration, \"not_afk\": not_afk, \"processed\": not_afk_process};")
 
         result = []
         if self.query2:
@@ -181,8 +191,12 @@ class TrackerReport:
             result = self.app.api.query2(
                 "report-call-time", query, timeperiods, False
             )
-        
         total_duration = result[0]["duration"]
+        not_afk = result[0]["not_afk"]
+        processed = result[0]["processed"]
+        logger.info(f"Total spent time duration: {total_duration}") 
+        logger.info(f"not_afk {not_afk}")
+        logger.info(f"processed {processed}")
         return total_duration
 
     def report(self, day: str = None):
