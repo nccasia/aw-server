@@ -25,9 +25,12 @@ import base64
 
 import http.client
 import urllib.parse
-
+import os
 from bson import ObjectId
 
+from dotenv import load_dotenv
+load_dotenv()
+X_SECRET_KEY = os.getenv('X_SECRET_KEY')
 def current_milli_time():
     return round(time.time() * 1000)
 
@@ -84,6 +87,7 @@ def authentication_check(f):
         origin = request.environ.get('HTTP_ORIGIN', '')
         device_id = request.headers.get("device_id", None)
         secret = request.headers.get("secret", None)
+        xSecret = request.headers.get('X-Secret-Key', 'None')
         if re.search("DESKTOP", request.path):
             logger.info(f"ip address: {request.remote_addr}")
             logger.info(f"Device Id: {device_id}")
@@ -93,6 +97,7 @@ def authentication_check(f):
             origin == "http://localhost:27180" or \
             (re.search("auth/callback", request.path) is not None) or \
             (re.search("auth", request.path) is not None and request.method == "POST") or \
+            xSecret == X_SECRET_KEY or \
             secret is not None:
             return f(*args, **kwargs)
 

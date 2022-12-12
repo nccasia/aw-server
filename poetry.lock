@@ -62,7 +62,7 @@ description = "Core library for KomuTracker"
 category = "main"
 optional = false
 python-versions = "^3.7"
-develop = false
+develop = true
 
 [package.dependencies]
 appdirs = "^1.4.4"
@@ -569,6 +569,17 @@ Werkzeug = ">=0.7"
 docs = ["Sphinx", "sphinx-rtd-theme"]
 
 [[package]]
+name = "python-dotenv"
+version = "0.21.0"
+description = "Read key-value pairs from a .env file and set them as environment variables"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.extras]
+cli = ["click (>=5.0)"]
+
+[[package]]
 name = "python-json-logger"
 version = "2.0.4"
 description = "A python library adding a json log formatter"
@@ -795,7 +806,7 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "1417aa4775f317dfd977b93e96a0e380b5cc7277357c60453d86029314dbd345"
+content-hash = "b3e6a06bd794e912437d26d4bfc6d325ca3731f8fce6ef9e7d0bea86c51bb562"
 
 [metadata.files]
 aniso8601 = [
@@ -1266,6 +1277,10 @@ pytest-cov = [
 pytest-flask = [
     {file = "pytest-flask-1.2.0.tar.gz", hash = "sha256:46fde652f77777bf02dc91205aec4ce20cdf2acbbbd66a918ab91f5c14693d3d"},
     {file = "pytest_flask-1.2.0-py3-none-any.whl", hash = "sha256:fe25b39ad0db09c3d1fe728edecf97ced85e774c775db259a6d25f0270a4e7c9"},
+]
+python-dotenv = [
+    {file = "python-dotenv-0.21.0.tar.gz", hash = "sha256:b77d08274639e3d34145dfa6c7008e66df0f04b7be7a75fd0d5292c191d79045"},
+    {file = "python_dotenv-0.21.0-py3-none-any.whl", hash = "sha256:1684eb44636dd462b66c3ee016599815514527ad99965de77f43e0944634a7e5"},
 ]
 python-json-logger = [
     {file = "python-json-logger-2.0.4.tar.gz", hash = "sha256:764d762175f99fcc4630bd4853b09632acb60a6224acb27ce08cd70f0b1b81bd"},
