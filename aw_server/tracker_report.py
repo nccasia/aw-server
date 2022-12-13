@@ -54,7 +54,7 @@ def cal_timeperiods(day: str = ""):
 
     _timeperiods = [
         "/".join([start.replace(tzinfo=pytz.utc).astimezone(pytz.timezone('Asia/Saigon')
-                                                            ).isoformat(), end.astimezone(pytz.timezone('Asia/Saigon')).isoformat()])
+                                                            ).replace(hour=6).isoformat(), end.astimezone(pytz.timezone('Asia/Saigon')).replace(hour=0).isoformat()])
         for start, end in timeperiods
     ]
 
