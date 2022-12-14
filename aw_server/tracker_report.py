@@ -1,8 +1,12 @@
 from datetime import date, datetime, timedelta, time
+from aw_core.log import setup_logging
+from aw_datastore import get_storage_methods
+from aw_datastore.datastore import Datastore
+from aw_query import query2
 import requests
 import logging
 import pytz
-
+import iso8601
 logger = logging.getLogger('REPORT')
 
 
@@ -80,11 +84,27 @@ class TrackerReport:
         #   date = datetime.combine(datetime.now().date(), time()).date()
 
         try:
+            # Try getting report from database
+            try:
+                date = str_to_date(day)
+                _report = self.db.storage_strategy.get_report(email=email,day=date)
+                if _report:
+                    # TODO: FIX ME Converting float to timedelta because storing in database as timedelta
+                    _report["str_active_time"] = format_timedelta(timedelta(seconds=_report['active_time'])) 
+                    _report["str_spent_time"] = format_timedelta(timedelta(seconds=_report['spent_time']))
+                    _report["str_call_time"] = format_timedelta(timedelta(seconds=_report['call_time']))
+                    _report["date"] = day
+                    _report.pop('id')
+                    return _report
+            except Exception as e:
+                logger.info(f"Error when getting Report Model: {e}") 
+            # No report found, process as usual
             timeperiods = cal_timeperiods(day)
             try:
                 spent_time = self.get_spent_time(email, timeperiods)
                 call_time = self.get_call_time(email, timeperiods)
-            except:
+            except Exception as e:
+                logger.info(f"Error {e}")
                 spent_time = self.get_spent_time(
                     f"{email}.ncc", timeperiods)
                 call_time = self.get_call_time(
@@ -101,6 +121,8 @@ class TrackerReport:
                 "date": day,
                 "wfh": wfh
             }
+            # ! If getting report of on going day, the report is lock on the first time called getting report. Switching to using cronjob
+            # logger.info(f"rec: {rec}")
             # self.db.storage_strategy.save_report(rec)
             return rec
         except Exception as e:
@@ -124,8 +146,10 @@ class TrackerReport:
         query.append(
             "events = filter_keyvals(events, \"title\", [\"KomuTracker - Google Chrome\"]);")
         query.append(
-            f"afk = flood(query_bucket(find_bucket(\"aw-watcher-afk_{email}\")));")
+            f"afk = query_bucket(find_bucket(\"aw-watcher-afk_{email}\"));")
         query.append("afk = filter_keyvals(afk, \"status\", [\"afk\"]);")
+        query.append(f"afk = merge_events(afk);")
+        query.append(f"afk = flood(afk);")
         query.append("events = filter_period_intersect(events, afk);")
         query.append("duration = sum_durations(events);")
         query.append("RETURN = {\"duration\": duration, \"events\": events};")
@@ -141,23 +165,7 @@ class TrackerReport:
             )
 
         total_call_time = result[0]["duration"]
-        
-        events = result[0]['events']
-        events_obj = {}
-        for event in events:
-           events_obj[event['id']] = event
-        # logger.info(events[0]['timestamp'].isoformat())
-        event_durations = []
-        for event in events_obj:
-            event_durations.append(events_obj[event]['duration'])
-        total_call = sum(duration.total_seconds() for duration in event_durations)
-        logger.info(f"total call: {total_call}")
-        logger.info(len(event_durations))
-        events_durations = sum(event['duration'].total_seconds() for event in events)
-        logger.info(events_durations)
-        # logger.info(len(events))
-        return timedelta(seconds=total_call)
-        # return total_call_time
+        return total_call_time
 
     def get_spent_time(self, email, timeperiods) -> timedelta:
         # ! Changing to only consider not_afk, ignore window_events
@@ -183,7 +191,8 @@ class TrackerReport:
         total_duration = result[0]["duration"]
         return total_duration
 
-    def report(self, day: str = None):
+    def report(self, day: str = None, save_to_db = False):
+        logger.info(f"Running tracker_report on day {day}")
         date = str_to_date(day)
 
         timesheetdate = date.strftime("%Y-%m-%d")
@@ -212,10 +221,43 @@ class TrackerReport:
         for email in report_users:
             rec = self.report_user(
                 email=email, wfh=report_users[email]['wfh'], day=day)
+            if save_to_db:
+                self.db.storage_strategy.save_report(rec)
             rec['spent_time'] = str(timedelta(seconds=rec["spent_time"]))
             rec["call_time"] = str(timedelta(seconds=rec["call_time"]))
             rec["active_time"] = str(timedelta(seconds=rec["active_time"]))
             response.append(rec)
-            # self.db.storage_strategy.save_report(rec)
-
         return response
+
+def main():
+    setup_logging("Cronjob",
+        testing=False,
+        verbose=False,
+        log_stderr=False,
+        log_file=False,
+        log_file_json=False,)
+    storage_methods = get_storage_methods()
+    storage_method = storage_methods['peewee']
+    yesterday = datetime.today() - timedelta(days = 1)
+    date = datetime.strftime(yesterday, '%Y/%m/%d')
+    db = Datastore(storage_method, testing=False)
+    def self_query2(name, query, timeperiods, cache):
+            result = []
+            for timeperiod in timeperiods:
+                period = timeperiod.split("/")[
+                    :2
+                ]  # iso8601 timeperiods are separated by a slash
+                starttime = iso8601.parse_date(period[0])
+                endtime = iso8601.parse_date(period[1])
+                query = str().join(query)
+                result.append(query2.query(name, query, starttime, endtime, db))
+            return result
+    tracker_report = TrackerReport(db=db, query2=self_query2)
+    reports = tracker_report.report(date, save_to_db=False)
+    logger.info(f"Running tracker_report on day {date}")
+    print(f"Running tracker_report on day {date}: generated {len(reports)} total reports ") 
+    # print(f"Report {reports}")
+    
+
+if __name__ == '__main__':
+    main()
