@@ -21,12 +21,12 @@ make build
 The `aw-server` binary should now be available to you in your PATH (if it is set correctly).
 
 ## Usage
-
 Run aw-server:
 
 ```bash
 aw-server
 ```
+`Note`: Create a .env file and add a X_SECRET_KEY variable
 
 ## Development
 

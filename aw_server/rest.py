@@ -25,9 +25,12 @@ import base64
 
 import http.client
 import urllib.parse
-
+import os
 from bson import ObjectId
 
+from dotenv import load_dotenv
+load_dotenv()
+X_SECRET_KEY = os.getenv('X_SECRET_KEY')
 def current_milli_time():
     return round(time.time() * 1000)
 
@@ -84,6 +87,7 @@ def authentication_check(f):
         origin = request.environ.get('HTTP_ORIGIN', '')
         device_id = request.headers.get("device_id", None)
         secret = request.headers.get("secret", None)
+        xSecret = request.headers.get('X-Secret-Key', 'None')
         if re.search("DESKTOP", request.path):
             logger.info(f"ip address: {request.remote_addr}")
             logger.info(f"Device Id: {device_id}")
@@ -93,6 +97,7 @@ def authentication_check(f):
             origin == "http://localhost:27180" or \
             (re.search("auth/callback", request.path) is not None) or \
             (re.search("auth", request.path) is not None and request.method == "POST") or \
+            xSecret == X_SECRET_KEY or \
             secret is not None:
             return f(*args, **kwargs)
 
@@ -167,6 +172,7 @@ def log_out(current_user):
 
 blueprint = Blueprint("api", __name__, url_prefix="/api")
 api = Api(blueprint, doc="/", decorators=[authentication_check])
+# api = Api(blueprint, doc="/")
 
 # TODO: Clean up JSONEncoder code?
 # Move to server.py
@@ -546,7 +552,28 @@ class Report(Resource):
         day = request.args.get("day")
         report = current_app.api.get_user_report(email, day)
         return report
-
+@api.route("/0/report")
+class ReportEmployeesOnDate(Resource):
+    def post(self):
+        day = request.args.get("day")
+        req = request.get_json()
+        if "emails" in req:
+            emails = req["emails"]
+        else:
+            raise BadRequest("MissingParameter", "Missing required parameter emails") 
+        logger.info(f"Reporting emails on date {day}")
+        res = []
+        for email in emails:
+            raw_report = current_app.api.get_user_report(email,day)
+            raw_report.pop("spent_time", None)
+            raw_report.pop("call_time", None)
+            raw_report.pop("str_active_time", None)
+            raw_report.pop("str_spent_time", None)
+            raw_report.pop("str_call_time", None)
+            raw_report.pop("date", None)
+            raw_report.pop("wfh", None)
+            res.append(raw_report)
+        return res, 200
 @api.route("/0/report")
 class ReportAll(Resource):
     def get(self):
