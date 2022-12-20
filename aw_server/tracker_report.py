@@ -192,15 +192,14 @@ class TrackerReport:
         return total_duration
 
     def report(self, day: str = None, save_to_db = False):
-        logger.info(f"Running tracker_report on day {day}")
         date = str_to_date(day)
-
+        logger.info(f"Running tracker_report on day {date}")
         timesheetdate = date.strftime("%Y-%m-%d")
         api_url = f"http://timesheetapi.nccsoft.vn/api/services/app/Public/GetUserWorkFromHome?date={timesheetdate}"
         api_key_secret = "sksCCsksCC"
         r = requests.get(api_url, headers={"securitycode": api_key_secret})
 
-        users_use_tracker = self.db.storage_strategy.get_use_tracker()
+        users_use_tracker = self.db.storage_strategy.get_use_tracker(date)
         report_users = {}
         for user in users_use_tracker:
             user['wfh'] = False
@@ -229,7 +228,8 @@ class TrackerReport:
             response.append(rec)
         return response
 
-def main():
+def report_on_dates(day: datetime = datetime.today(), duration: int = 1):
+    print(f"Running report from {day - timedelta(days = duration - 1)} to {day}")
     setup_logging("Cronjob",
         testing=False,
         verbose=False,
@@ -238,8 +238,7 @@ def main():
         log_file_json=False,)
     storage_methods = get_storage_methods()
     storage_method = storage_methods['peewee']
-    yesterday = datetime.today() - timedelta(days = 1)
-    date = datetime.strftime(yesterday, '%Y/%m/%d')
+    end_date = datetime.strftime(day, '%Y/%m/%d')
     db = Datastore(storage_method, testing=False)
     def self_query2(name, query, timeperiods, cache):
             result = []
@@ -253,11 +252,20 @@ def main():
                 result.append(query2.query(name, query, starttime, endtime, db))
             return result
     tracker_report = TrackerReport(db=db, query2=self_query2)
-    reports = tracker_report.report(date, save_to_db=False)
-    logger.info(f"Running tracker_report on day {date}")
-    print(f"Running tracker_report on day {date}: generated {len(reports)} total reports ") 
-    # print(f"Report {reports}")
-    
+    dates = [datetime.strftime(day - timedelta(days=idx), '%Y/%m/%d') for idx in range(duration)]
+    for date in dates:
+        try:
+            print(f"Start running tracker_report on {date}")
+            reports = tracker_report.report(date, save_to_db=True)
+            logger.info(f"Running tracker_report on day {date}")
+            print(f"Finish running tracker_report on day {date}: generated {len(reports)} total reports ") 
+        except Exception as e:
+            print(f"Day: {date} generate error: \n{e}")
+            break
+    print(f"Finish reporting") 
+    # print(f"Report {reports}")  
 
 if __name__ == '__main__':
-    main()
+    # stop_date = datetime(2022,6,10)
+    # report_on_dates(stop_date, 100)
+    report_on_dates()
