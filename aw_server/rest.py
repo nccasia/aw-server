@@ -8,7 +8,6 @@ import re
 from flask import redirect, request, Blueprint, jsonify, current_app, make_response, session
 from flask_restx import Api, Resource, fields
 import iso8601
-from datetime import datetime, timedelta
 
 from aw_core import schema
 from aw_core.models import Event
@@ -26,11 +25,16 @@ import base64
 import http.client
 import urllib.parse
 import os
-from bson import ObjectId
 
 from dotenv import load_dotenv
 load_dotenv()
 X_SECRET_KEY = os.getenv('X_SECRET_KEY')
+
+oauth2_auth_url = config["oauth2"]["auth_url"]
+oauth2_client_id = config["oauth2"]["client_id"]
+oauth2_client_secret = config["oauth2"]["client_secret"]
+oauth2_redirect_uri = config["oauth2"]["redirect_uri"]
+
 def current_milli_time():
     return round(time.time() * 1000)
 
@@ -116,82 +120,31 @@ def authentication_check(f):
 
     return decorator
 
-def get_user_info(token: str):
-    auth_url = "identity.nccsoft.vn"
-    headers = {"Authorization": token}
-    conn = http.client.HTTPSConnection(auth_url)
-    conn.request("GET", "/auth/realms/ncc/protocol/openid-connect/userinfo", headers=headers)
-    response = conn.getresponse()
-    logger.info(f"get_user_info status: {response.status}")
-    if response.status != 200:
-        return None
-    
-    data = json.loads(response.read())
-    return data
-
-def get_token(device_id):
-    # TODO add to config
-    auth_url = "identity.nccsoft.vn"
-    client_id = "komutracker"
-    client_secret = "YL9QxaaWjksRGFt9q97ayosySdBIpTee"
-    
-    params = urllib.parse.urlencode({
-        'grant_type': 'authorization_code',
-        'client_id': client_id,
-        'client_secret': client_secret,
-        'code': request.args["code"]
+def make_mezon_oauth2_request(method:str, path:str, params: dict):
+    headers = {"Content-type": "application/x-www-form-urlencoded"}
+    prepared_params = urllib.parse.urlencode({
+        'client_id': oauth2_client_id,
+        'client_secret': oauth2_client_secret,
+        'redirect_uri': oauth2_redirect_uri,
+        **params
     })
-    headers = {"Content-type": "application/x-www-form-urlencoded"}
-
-    conn = http.client.HTTPSConnection(auth_url)
-    conn.request("POST", "/auth/realms/ncc/protocol/openid-connect/token", params, headers)
+    conn = http.client.HTTPSConnection(oauth2_auth_url)
+    conn.request(
+        method,
+        path,
+        body=prepared_params,
+        headers=headers
+    )
     response = conn.getresponse()
     if response.status != 200:
-        logger.error(f"Auth failed for device: {device_id}")
+        print(f"Error: {response.status}")
+        print(response.read())
         return None
-    return json.loads(response.read())
-
-def log_out(current_user):
-    # TODO add to config
-    auth_url = "identity.nccsoft.vn"
-    client_id = "komutracker"
-    client_secret = "YL9QxaaWjksRGFt9q97ayosySdBIpTee"
-    
-    headers = {"Content-type": "application/x-www-form-urlencoded"}
-    logger.info(f"log_out: {current_user}")
-    conn = http.client.HTTPSConnection(auth_url)
-    if current_user is not None:
-        params = urllib.parse.urlencode({
-            'client_id': client_id,
-            'client_secret': client_secret,
-            'refresh_token': current_user["refresh_token"]
-        })
-        conn.request("POST", "/auth/realms/ncc/protocol/openid-connect/logout", params, headers)
-    
-    
+    return json.loads(response.read())   
 
 blueprint = Blueprint("api", __name__, url_prefix="/api")
 api = Api(blueprint, doc="/", decorators=[authentication_check])
 # api = Api(blueprint, doc="/")
-
-# TODO: Clean up JSONEncoder code?
-# Move to server.py
-class CustomJSONEncoder(json.JSONEncoder):
-    def __init__(self, *args, **kwargs):
-        super().__init__()
-
-    def default(self, obj, *args, **kwargs):
-        try:
-            if isinstance(obj, datetime):
-                return obj.isoformat()
-            if isinstance(obj, timedelta):
-                return obj.total_seconds()
-            if isinstance(obj, ObjectId):
-                return str(obj)
-        except TypeError:
-            pass
-        return json.JSONEncoder.default(self, obj)
-
 
 class AnyJson(fields.Raw):
     def format(self, value):
@@ -525,22 +478,37 @@ class AuthCallbackResource(Resource):
     def get(self):
         device_id = request.args["state"]
         logger.info(f"Auth callback for device: {device_id}")
-        data = get_token(device_id)
+        data = make_mezon_oauth2_request(
+            method = "POST", 
+            path = "/oauth2/token", 
+            params = {
+                'grant_type': 'authorization_code',
+                'code': request.args["code"],
+                'scope': '',
+            }
+        )
         if data is None:
             return
         token = data["access_token"]
-        user = get_user_info("Bearer " + token)
-        logger.info(f"Auth success for: {user['email']}")
+        user = make_mezon_oauth2_request(
+            method = "POST", 
+            path = "/userinfo", 
+            params = {
+                'access_token': token,
+            }
+        )
+        user_email = user["sub"]
+        logger.info(f"Auth success for: {user_email}")
         
         current_app.api.save_user({
             "device_id": device_id,
-            "name": user["name"],
-            "email": user['email'],
+            "name": user_email,
+            "email": user_email,
             "access_token": data["access_token"], 
-            "refresh_token": data["refresh_token"]
+            "refresh_token": data["access_token"]
         })
         
-        user_name = re.split("@", user['email'], 1)[0]
+        user_name = re.split("@", user_email, 1)[0]
         
         return redirect(f"http://tracker.komu.vn/#/activity/{user_name}/view/", code=302)
 
