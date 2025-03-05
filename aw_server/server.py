@@ -1,6 +1,7 @@
 import os
 import logging
 from typing import List, Dict
+import json
 
 from flask import Flask, Blueprint, current_app, send_from_directory
 from flask_cors import CORS
@@ -12,6 +13,9 @@ from .custom_static import get_custom_static_blueprint
 from .log import FlaskLogHandler
 from .api import ServerAPI
 from . import rest
+
+from datetime import datetime, timedelta
+from bson import ObjectId
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +30,25 @@ class AWFlask(Flask):
 
         # Is set on later initialization
         self.api = None  # type: ServerAPI
-        
+
+# TODO: Clean up JSONEncoder code?
+# Move to server.py
+class CustomJSONEncoder(json.JSONEncoder):
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+
+    def default(self, obj, *args, **kwargs):
+        try:
+            if isinstance(obj, datetime):
+                return obj.isoformat()
+            if isinstance(obj, timedelta):
+                return obj.total_seconds()
+            if isinstance(obj, ObjectId):
+                return str(obj)
+        except TypeError:
+            pass
+        return json.JSONEncoder.default(self, obj)
+
 
 def create_app(
     host: str, testing=True, storage_method=None, cors_origins=[], custom_static=dict()
@@ -41,7 +63,7 @@ def create_app(
     with app.app_context():
         _config_cors(cors_origins, testing)
 
-    app.json_encoder = rest.CustomJSONEncoder
+    app.json_encoder = CustomJSONEncoder
 
     app.register_blueprint(root)
     app.register_blueprint(rest.blueprint)

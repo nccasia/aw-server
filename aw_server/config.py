@@ -9,6 +9,12 @@ cors_origins = "*"
 secret = "secret"
 mongo_url = "mongodb://localhost:27017/"
 
+[oauth2]
+auth_url = "oauth2.mezon.ai"
+client_id = ""
+client_secret = ""
+redirect_uri = "https://tracker-api.komu.vn/api/0/auth/callback"
+
 [server.custom_static]
 
 [server-testing]
