@@ -34,6 +34,7 @@ oauth2_auth_url = config["oauth2"]["auth_url"]
 oauth2_client_id = config["oauth2"]["client_id"]
 oauth2_client_secret = config["oauth2"]["client_secret"]
 oauth2_redirect_uri = config["oauth2"]["redirect_uri"]
+application_domain = config["server"]["application_domain"]
 
 def current_milli_time():
     return round(time.time() * 1000)
@@ -76,7 +77,7 @@ def host_header_check(f):
         if req_host is None:
             return {"message": "host header is missing"}, 400
         else:
-            if req_host.split(":")[0] not in ["localhost", "127.0.0.1", "tracker.komu.vn", server_host]:
+            if req_host.split(":")[0] not in ["localhost", "127.0.0.1", application_domain, server_host]:
                 return {"message": f"host header is invalid (was {req_host})"}, 400
         
     return decorator
@@ -96,8 +97,8 @@ def authentication_check(f):
             logger.info(f"ip address: {request.remote_addr}")
             logger.info(f"Device Id: {device_id}")
             return {"message": "bad request"}, 400  
-        if origin == "http://tracker.komu.vn" or \
-            origin == "https://tracker.komu.vn" or \
+        if origin == f"http://{application_domain}" or \
+            origin == f"https://{application_domain}" or \
             origin == "http://localhost:27180" or \
             (re.search("auth/callback", request.path) is not None) or \
             (re.search("auth", request.path) is not None and request.method == "POST") or \
@@ -510,7 +511,7 @@ class AuthCallbackResource(Resource):
         
         user_name = re.split("@", user_email, 1)[0]
         
-        return redirect(f"http://tracker.komu.vn/#/activity/{user_name}/view/", code=302)
+        return redirect(f"http://{application_domain}/#/activity/{user_name}/view/", code=302)
 
 # REPORT
 

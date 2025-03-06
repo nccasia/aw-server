@@ -8,6 +8,7 @@ storage = "peewee"
 cors_origins = "*"
 secret = "secret"
 mongo_url = "mongodb://localhost:27017/"
+application_domain = "tracker.komu.vn"
 
 [oauth2]
 auth_url = "oauth2.mezon.ai"
