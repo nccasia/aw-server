@@ -20,8 +20,8 @@ waitress = "^2.1.2"
 werkzeug = "2.1.2"
 pymongo = "^4.3.3"
 psycopg2-binary = "^2.9.5"
-aw-core = {path = "../aw-core", develop = true}
 python-dotenv = "^0.21.0"
+aw-core = {path = "../aw-core"}
 
 [tool.poetry.dev-dependencies]
 mypy = "*"

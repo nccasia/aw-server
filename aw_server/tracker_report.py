@@ -197,7 +197,7 @@ class TrackerReport:
         timesheetdate = date.strftime("%Y-%m-%d")
         api_url = f"http://timesheetapi.nccsoft.vn/api/services/app/Public/GetUserWorkFromHome?date={timesheetdate}"
         api_key_secret = "sksCCsksCC"
-        r = requests.get(api_url, headers={"securitycode": api_key_secret})
+        r = requests.get(api_url, headers={"securitycode": api_key_secret}, verify=False)
 
         users_use_tracker = self.db.storage_strategy.get_use_tracker(date)
         report_users = {}
