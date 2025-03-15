@@ -468,6 +468,11 @@ class AuthResource(Resource):
         token = current_app.api.get_user_token(data["device_id"])
         # logger.info(f"get token for device: {data['device_id']}")
         return token
+    
+    def delete(self):
+        data = request.get_json()
+        current_app.api.delete_user_token(data["device_id"])
+        return {}, 200
 
 @api.route("/0/auth/me")
 class AuthResource(Resource):

@@ -349,6 +349,13 @@ class ServerAPI:
     def get_user_token(self, device_id) -> str:
         return self.user_data[device_id]["access_token"] if device_id in self.user_data else None
     
+    def delete_user_token(self, device_id):
+        if device_id in self.user_data:
+            user = self.user_data[device_id]
+            del self.user_data[device_id]
+            return True
+        return False
+    
     def get_user_by_email(self, email) -> str:
         user = self.db.get_user({"email": email})
         return json.loads(user)
