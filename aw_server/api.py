@@ -337,10 +337,7 @@ class ServerAPI:
                 return old_user
             else:
                 del self.user_data[old_user['device_id']]
-        new_email = user.get("email")
-        keys_to_delete = [k for k, v in self.user_data.items() if v.get("email") == new_email]
-        for k in keys_to_delete:
-            del self.user_data[k]
+
         self.user_data[user['device_id']] = user
         
         self.db.save_user(user)
