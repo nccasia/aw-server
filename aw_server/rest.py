@@ -503,7 +503,7 @@ class AuthCallbackResource(Resource):
                 'access_token': token,
             }
         )
-        user_email = user["sub"]
+        user_email = user["email"]
         logger.info(f"Auth success for: {user_email}")
         
         current_app.api.save_user({
