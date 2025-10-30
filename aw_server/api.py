@@ -332,7 +332,7 @@ class ServerAPI:
             old_user = json.loads(self.db.get_user({"email": user['email']}))
         except:
             old_user = self.db.get_user({"email": user['email']})
-        if old_user is not None and '_id' in old_user:
+        if old_user is not None and 'id' in old_user:
             if old_user['device_id'] == user['device_id']:
                 return old_user
             else:
