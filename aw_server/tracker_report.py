@@ -194,10 +194,10 @@ class TrackerReport:
     def report(self, day: str = None, save_to_db = False):
         date = str_to_date(day)
         logger.info(f"Running tracker_report on day {date}")
-        timesheetdate = date.strftime("%Y-%m-%d")
-        api_url = f"http://timesheetapi.nccsoft.vn/api/services/app/Public/GetUserWorkFromHome?date={timesheetdate}"
-        api_key_secret = "sksCCsksCC"
-        r = requests.get(api_url, headers={"securitycode": api_key_secret}, verify=False)
+        # timesheetdate = date.strftime("%Y-%m-%d")
+        # api_url = f"http://timesheetapi.nccsoft.vn/api/services/app/Public/GetUserWorkFromHome?date={timesheetdate}"
+        # api_key_secret = "sksCCsksCC"
+        # r = requests.get(api_url, headers={"securitycode": api_key_secret}, verify=False)
 
         users_use_tracker = self.db.storage_strategy.get_use_tracker(date)
         report_users = {}
@@ -206,15 +206,15 @@ class TrackerReport:
             email = user["email"].split("@")[0]
             report_users[email] = user
 
-        result = r.json()["result"]
-        for user in result:
-            email = user["emailAddress"].split("@")[0]
+        # result = r.json()["result"]
+        # for user in result:
+        #     email = user["emailAddress"].split("@")[0]
 
-            try:
-                report_users[email]['wfh'] = True
-            except:
-                user['wfh'] = True
-                report_users[email] = user
+        #     try:
+        #         report_users[email]['wfh'] = True
+        #     except:
+        #         user['wfh'] = True
+        #         report_users[email] = user
 
         response = []
         for email in report_users:
