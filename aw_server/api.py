@@ -328,6 +328,8 @@ class ServerAPI:
 
     def save_user(self, user):
         """Save token to db"""
+        user = self.db.save_user(user)
+
         try:
             old_user = json.loads(self.db.get_user({"email": user['email']}))
         except:
@@ -339,8 +341,6 @@ class ServerAPI:
                 del self.user_data[old_user['device_id']]
 
         self.user_data[user['device_id']] = user
-        
-        self.db.save_user(user)
         if '_id' in user:
             del user['_id'] 
     
