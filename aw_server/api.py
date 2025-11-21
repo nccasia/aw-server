@@ -383,7 +383,7 @@ class ServerAPI:
     def update_user_last_use(self, device_id):
         today = datetime.now(timezone.utc).replace(tzinfo=pytz.utc).astimezone(pytz.timezone('Asia/Saigon')).date()
         user = self.user_data[device_id]
-        last_used_at = user['last_used_at']
+        last_used_at = user.get('last_used_at', None)
         if last_used_at == None:
             last_used_at = datetime.now(timezone.utc).isoformat()
             user['last_used_at'] = last_used_at
