@@ -328,19 +328,21 @@ class ServerAPI:
 
     def save_user(self, user):
         """Save token to db"""
-        user = self.db.save_user(user)
-
         try:
-            old_user = json.loads(self.db.get_user({"email": user['email']}))
+            old_user = json.loads(self.db.get_user({"mezon_user_id": user['mezon_user_id']}))
         except:
-            old_user = self.db.get_user({"email": user['email']})
-        if old_user is not None and 'id' in old_user:
+            old_user = self.db.get_user({"mezon_user_id": user['mezon_user_id']})
+            
+        if old_user is not None and 'device_id' in old_user:
             if old_user['device_id'] == user['device_id']:
+                self.user_data[old_user['device_id']] = user
                 return old_user
             else:
                 del self.user_data[old_user['device_id']]
 
         self.user_data[user['device_id']] = user
+        
+        self.db.save_user(user)
         if '_id' in user:
             del user['_id'] 
     
@@ -386,7 +388,7 @@ class ServerAPI:
             last_used_at = datetime.now(timezone.utc).isoformat()
             user['last_used_at'] = last_used_at
             self.user_data[device_id] = user
-            UserModel.update(last_used_at=datetime.fromisoformat(last_used_at)).where(UserModel.id == user['id']).execute()
+            UserModel.update(last_used_at=datetime.fromisoformat(last_used_at)).where(UserModel.mezon_user_id == user['mezon_user_id']).execute()
         else:
             if not isinstance(last_used_at, str):
                 last_used_at = last_used_at.isoformat()
@@ -397,7 +399,7 @@ class ServerAPI:
                 last_used_at = datetime.now(timezone.utc).isoformat()
                 user['last_used_at'] = last_used_at
                 self.user_data[device_id] = user
-                UserModel.update(last_used_at=datetime.fromisoformat(last_used_at)).where(UserModel.id == user['id']).execute()
+                UserModel.update(last_used_at=datetime.fromisoformat(last_used_at)).where(UserModel.mezon_user_id == user['mezon_user_id']).execute()
                 pass
             else:
                 user['last_used_at'] = last_used_at

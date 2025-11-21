@@ -511,7 +511,8 @@ class AuthCallbackResource(Resource):
             "name": user_email,
             "email": user_email,
             "access_token": data["access_token"], 
-            "refresh_token": data["access_token"]
+            "refresh_token": data["access_token"],
+            "mezon_user_id": user["user_id"],
         })
         
         user_name = re.split("@", user_email, 1)[0]
