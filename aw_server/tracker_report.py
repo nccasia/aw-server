@@ -192,7 +192,10 @@ class TrackerReport:
         return total_duration
 
     def report(self, day: str = None, save_to_db = False):
-        date = str_to_date(day)
+        def to_utc_midnight(day: datetime.date):
+            return datetime.combine(day, time.min).replace(tzinfo=pytz.UTC)
+        date = to_utc_midnight(str_to_date(day))
+        # print timezone info of date
         logger.info(f"Running tracker_report on day {date}")
         # timesheetdate = date.strftime("%Y-%m-%d")
         # api_url = f"http://timesheetapi.nccsoft.vn/api/services/app/Public/GetUserWorkFromHome?date={timesheetdate}"
@@ -229,7 +232,7 @@ class TrackerReport:
         return response
 
 def report_on_dates(day: datetime = datetime.today(), duration: int = 1):
-    print(f"Running report from {day - timedelta(days = duration - 1)} to {day}")
+    print(f"Running report from {day - timedelta(days = duration)} to {day}")
     setup_logging("Cronjob",
         testing=False,
         verbose=False,
@@ -252,7 +255,7 @@ def report_on_dates(day: datetime = datetime.today(), duration: int = 1):
                 result.append(query2.query(name, query, starttime, endtime, db))
             return result
     tracker_report = TrackerReport(db=db, query2=self_query2)
-    dates = [datetime.strftime(day - timedelta(days=idx), '%Y/%m/%d') for idx in range(duration)]
+    dates = [datetime.strftime(day - timedelta(days=idx + 1), '%Y/%m/%d') for idx in range(duration)]
     for date in dates:
         try:
             print(f"Start running tracker_report on {date}")
