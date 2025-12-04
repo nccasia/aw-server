@@ -13,6 +13,10 @@ logger = logging.getLogger('REPORT')
 def _dt_is_tzaware(dt: datetime) -> bool:
     return dt.tzinfo is not None and dt.tzinfo.utcoffset(dt) is not None
 
+def to_utc7_midnight(day: date):
+    tz = pytz.timezone("Asia/Ho_Chi_Minh")
+    local_dt = tz.localize(datetime.combine(day, time.min))
+    return local_dt.astimezone(pytz.UTC)
 
 def str_to_date(day: str = "") -> date:
     '''Convert string `day` (format: dd/MM/YYYY or YYYY/MM/dd) to type date
@@ -192,9 +196,7 @@ class TrackerReport:
         return total_duration
 
     def report(self, day: str = None, save_to_db = False):
-        def to_utc_midnight(day: datetime.date):
-            return datetime.combine(day, time.min).replace(tzinfo=pytz.UTC)
-        date = to_utc_midnight(str_to_date(day))
+        date = to_utc7_midnight(str_to_date(day))
         # print timezone info of date
         logger.info(f"Running tracker_report on day {date}")
         # timesheetdate = date.strftime("%Y-%m-%d")
