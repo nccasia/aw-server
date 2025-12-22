@@ -336,6 +336,9 @@ class ServerAPI:
         if old_user is not None and 'device_id' in old_user:
             if old_user['device_id'] == user['device_id']:
                 self.user_data[old_user['device_id']] = user
+                # Deep compare to avoid unnecessary db writes
+                if json.dumps(old_user, sort_keys=True) != json.dumps(user, sort_keys=True):
+                    self.db.save_user(user) 
                 return old_user
             else:
                 del self.user_data[old_user['device_id']]
