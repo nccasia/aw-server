@@ -102,13 +102,17 @@ class TrackerReport:
             timeperiods = cal_timeperiods(day)
             try:
                 spent_time = self.get_spent_time(email, timeperiods)
-                call_time = self.get_call_time(email, timeperiods)
+                # TODO: Fix call time later
+                # call_time = self.get_call_time(email, timeperiods)
+                call_time = 0
             except Exception as e:
                 logger.info(f"Error {e}")
-                spent_time = self.get_spent_time(
-                    f"{email}.ncc", timeperiods)
-                call_time = self.get_call_time(
-                    f"{email}.ncc", timeperiods)
+                # spent_time = self.get_spent_time(
+                #     f"{email}.ncc", timeperiods)
+                # call_time = self.get_call_time(
+                #     f"{email}.ncc", timeperiods)
+                spent_time = 0
+                call_time = 0
 
             rec = {
                 "email": email,
