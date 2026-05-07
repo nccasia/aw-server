@@ -103,8 +103,8 @@ class TrackerReport:
             try:
                 spent_time = self.get_spent_time(email, timeperiods)
                 # TODO: Fix call time later
-                # call_time = self.get_call_time(email, timeperiods)
-                call_time = timedelta()
+                call_time = self.get_call_time(email, timeperiods)
+                # call_time = timedelta()
             except Exception as e:
                 logger.info(f"Error {e}")
                 # spent_time = self.get_spent_time(
