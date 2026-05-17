@@ -134,10 +134,13 @@ def _start(
     )
     try:
         from waitress import serve
-        serve(app, 
+        serve(app,
             host=host,
             port=port,
-            threads=32,
+            threads=64,
+            connection_limit=200,
+            channel_timeout=60,
+            send_bytes=32768,
         )
         '''
         log = logging.getLogger('werkzeug')
